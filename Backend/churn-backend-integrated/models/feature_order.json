@@ -1,0 +1,33 @@
+{
+  "features": [
+    "recency_days",
+    "frequency",
+    "monetary",
+    "avg_order_value",
+    "max_order_value",
+    "total_events",
+    "view_count",
+    "cart_add_count",
+    "refund_count",
+    "support_ticket_count",
+    "wishlist_add_count",
+    "cart_remove_count",
+    "wishlist_remove_count",
+    "cart_update_count",
+    "view_to_cart_rate",
+    "cart_to_purchase_rate",
+    "overall_conversion_rate",
+    "wishlist_to_purchase_rate",
+    "cart_abandon_rate",
+    "wishlist_abandon_rate",
+    "cart_engagement_ratio",
+    "category_diversity",
+    "dominant_category_ratio",
+    "days_active",
+    "activity_intensity",
+    "activity_trend",
+    "purchase_trend",
+    "refund_rate",
+    "support_intensity"
+  ]
+}

@@ -1,0 +1,242 @@
+[
+  {
+    "product_id": "1e84b392-5411-4f8d-9b0a-c1cbbce2b91f",
+    "name": "Smartphone X200",
+    "description": "A sleek 6.5-inch smartphone with 128GB storage and dual cameras.",
+    "category": "Smartphones",
+    "price": 699.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "eea62724-c377-46e7-b8c7-4c39001d86b3",
+    "name": "Laptop Pro 15",
+    "description": "Lightweight laptop with 15-inch display, 16GB RAM, and 512GB SSD.",
+    "category": "Laptops",
+    "price": 1199.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "d6bb4c9a-2f2e-4c2f-9008-4c142e3e8ec3",
+    "name": "Wireless Earbuds Z",
+    "description": "Noise-cancelling earbuds with 24-hour battery life and fast charging.",
+    "category": "Audio",
+    "price": 149.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "bfbd7f86-a2db-41d4-9431-6a45a2394826",
+    "name": "4K Smart TV 55\"",
+    "description": "Ultra HD 4K smart TV with HDR and built-in streaming apps.",
+    "category": "Televisions",
+    "price": 599.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "3b1e6e77-257e-48a4-bf47-ccaa56b3e12b",
+    "name": "Gaming Console X",
+    "description": "Next-gen gaming console with 1TB storage and wireless controller.",
+    "category": "Gaming",
+    "price": 499.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "e0deab24-2436-4e2d-a63b-69dc8e88db5a",
+    "name": "Bluetooth Speaker Mini",
+    "description": "Portable Bluetooth speaker with waterproof design and deep bass.",
+    "category": "Audio",
+    "price": 89.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "c6a6e0dd-a408-4a31-bbf5-63f6aa5791a0",
+    "name": "Smartwatch S5",
+    "description": "Fitness-focused smartwatch with heart rate monitor and GPS.",
+    "category": "Wearables",
+    "price": 199.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "3c0165f1-1c47-44b2-b36f-891a65ad3a34",
+    "name": "Tablet Plus 10",
+    "description": "10-inch tablet with stylus support, 8GB RAM, and 256GB storage.",
+    "category": "Tablets",
+    "price": 399.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "0fd0dfbe-8bc5-4524-b98f-bc59c62dfaa7",
+    "name": "Wireless Gaming Mouse",
+    "description": "Ergonomic gaming mouse with RGB lighting and 12 programmable buttons.",
+    "category": "Accessories",
+    "price": 59.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "e79a0d40-40f0-4b67-b969-a5048a4440f2",
+    "name": "Mechanical Keyboard Pro",
+    "description": "High-performance mechanical keyboard with customizable switches.",
+    "category": "Accessories",
+    "price": 129.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "65bb72b1-2b69-4b52-b6df-d408b932acb3",
+    "name": "Noise-Cancelling Headphones",
+    "description": "Over-ear headphones with active noise cancellation and 40-hour battery life.",
+    "category": "Audio",
+    "price": 249.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "aa7e1c97-b9fc-4d34-91a5-0b61d32f9422",
+    "name": "Drone Camera 4K",
+    "description": "Foldable drone with 4K camera and 30-minute flight time.",
+    "category": "Drones",
+    "price": 549.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "4634a671-c232-4631-b127-1f22e4d8f5ff",
+    "name": "Portable Charger 20000mAh",
+    "description": "High-capacity power bank with fast charging USB-C ports.",
+    "category": "Accessories",
+    "price": 49.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "b2281720-e14c-43a7-b29b-f79053d2f327",
+    "name": "Smart Home Hub",
+    "description": "Voice-controlled hub for managing all your smart home devices.",
+    "category": "Smart Home",
+    "price": 129.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "3c63e3f3-b94c-4b3b-a5aa-45c0e5d1f071",
+    "name": "Action Camera Pro",
+    "description": "Waterproof 4K action camera with image stabilization.",
+    "category": "Cameras",
+    "price": 299.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "e5e219bb-6c4e-4fc8-bd7a-c86b6efad8e1",
+    "name": "Smart Light Bulb RGB",
+    "description": "Wi-Fi enabled RGB light bulb with voice assistant support.",
+    "category": "Smart Home",
+    "price": 29.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "18876af8-81a0-4e1b-9da4-66a16b3e027b",
+    "name": "Wireless Router AX6000",
+    "description": "Ultra-fast Wi-Fi 6 router with multi-device support.",
+    "category": "Networking",
+    "price": 249.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "8b04c925-0d94-4bb7-b89a-45a2a869bf7b",
+    "name": "External SSD 1TB",
+    "description": "Portable solid-state drive with 1TB storage and USB-C connectivity.",
+    "category": "Storage",
+    "price": 159.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "93b6c979-6319-4b29-8708-268303c0ef29",
+    "name": "VR Headset Pro",
+    "description": "Immersive VR headset with 110° field of view and 6DoF tracking.",
+    "category": "Gaming",
+    "price": 399.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "51fd4b65-d24a-4d16-a991-67f911b0d43e",
+    "name": "Smart Doorbell Cam",
+    "description": "Video doorbell with motion detection and two-way audio.",
+    "category": "Smart Home",
+    "price": 179.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "b542e17e-b203-42b8-ae93-54c83db4a9a2",
+    "name": "Electric Shaver Pro",
+    "description": "Rechargeable electric shaver with precision blades.",
+    "category": "Personal Care",
+    "price": 89.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "42bcf96c-7ec4-43f8-b9f3-7b098e0d2f25",
+    "name": "Projector HD 1080p",
+    "description": "Compact projector with 1080p resolution and HDMI input.",
+    "category": "Home Theater",
+    "price": 349.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "26a2b74a-4be2-4cf0-a993-d89ec0f90d7b",
+    "name": "Smart Thermostat",
+    "description": "Programmable thermostat with mobile app control.",
+    "category": "Smart Home",
+    "price": 149.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "70ef2ddf-7b39-4a2c-a70e-04e4f6bba1f4",
+    "name": "Electric Toothbrush",
+    "description": "Rechargeable toothbrush with multiple cleaning modes.",
+    "category": "Personal Care",
+    "price": 59.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "7fd394e1-bb7c-4c0d-a5d6-cb80af23a97d",
+    "name": "Smart Security Camera",
+    "description": "Indoor/outdoor camera with night vision and cloud storage.",
+    "category": "Smart Home",
+    "price": 129.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "4b5e2fc3-6d71-4cfb-9b94-d1dcd30b4b6e",
+    "name": "Coffee Maker Smart",
+    "description": "Wi-Fi enabled coffee maker with scheduling feature.",
+    "category": "Appliances",
+    "price": 199.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "c67efbcb-168b-4a65-a93b-ff155e53b8b6",
+    "name": "Smart Air Purifier",
+    "description": "Air purifier with HEPA filter and smart monitoring.",
+    "category": "Appliances",
+    "price": 249.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "68d11e6b-6f2b-4fdd-b7c3-bc9861a7ff47",
+    "name": "Portable Monitor 15\"",
+    "description": "USB-C portable monitor with 1080p resolution for laptops and gaming.",
+    "category": "Monitors",
+    "price": 229.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "d1dc68c3-95f7-45b3-8f50-c1957c3c2ccf",
+    "name": "Smart Scale Body Analyzer",
+    "description": "Bluetooth smart scale with body composition tracking.",
+    "category": "Health",
+    "price": 79.99,
+    "currency": "USD"
+  },
+  {
+    "product_id": "78dcfb6d-bc2a-4c3b-8d46-0d4d7e17636a",
+    "name": "Laptop Stand Adjustable",
+    "description": "Ergonomic aluminum laptop stand with adjustable height.",
+    "category": "Accessories",
+    "price": 49.99,
+    "currency": "USD"
+  }
+]
