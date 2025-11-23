@@ -12,11 +12,12 @@ import ChurnPrediction from "./pages/ChurnPrediction";
 import CustomerProfile from "./pages/CustomerProfile";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import Notifications from "./pages/Notifications";
+import BulkUpload from "./pages/BulkUpload";
 import OnboardingIntro from "./pages/onboarding/Intro";
 import { DashboardLayout } from "./components/layouts/DashboardLayout";
 import { OnboardingLayout } from "./components/layouts/OnboardingLayout";
 import NotFound from "./pages/NotFound";
+
 
 
 const queryClient = new QueryClient();
@@ -49,9 +50,9 @@ const App = () => (
             <Route path="events" element={<EventExplorer />} />
             <Route path="churn" element={<ChurnPrediction />} />
             <Route path="customers" element={<CustomerProfile/>} />
+            <Route path="bulk-upload" element={<BulkUpload/>} />
             <Route path="reports" element={<Reports/>} />
             <Route path="settings" element={<Settings/>} />
-            <Route path="notifications" element={<Notifications/>} />
           </Route>
           
           {/* Documentation routes */}

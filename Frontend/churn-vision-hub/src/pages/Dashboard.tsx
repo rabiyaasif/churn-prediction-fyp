@@ -1,316 +1,366 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import MetricCard from "@/components/MetricCard";
+import CustomerSegmentCard from "@/components/CustomerSegmentCard";
+import { Card } from "@/components/ui/card";
+import {
+  Users,
+  TrendingDown,
+  DollarSign,
+  AlertTriangle,
+  Target,
+  Activity,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, TrendingDown, Users, AlertTriangle, 
-  DollarSign, Activity, ArrowRight, MoreHorizontal, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getDashboardAnalytics } from "@/services/analysis";
 
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-const highRiskCustomers = [
-  {
-    name: "Sarah Johnson",
-    email: "sarah@company.com",
-    riskScore: 87,
-    lastActivity: "2 days ago",
-    value: "$2,340"
-  },
-  {
-    name: "Mike Chen",
-    email: "mike@startup.io",
-    riskScore: 76,
-    lastActivity: "5 days ago",
-    value: "$1,890"
-  },
-  {
-    name: "Emma Davis",
-    email: "emma@business.com",
-    riskScore: 72,
-    lastActivity: "1 week ago",
-    value: "$3,120"
-  }
-];
+  // Get clientId from localStorage and validate it
+  const clientIdStr = localStorage.getItem("client_id");
+  const clientId = clientIdStr ? parseInt(clientIdStr, 10) : null;
 
-const recentEvents = [
-  {
-    type: "purchase",
-    customer: "John Smith",
-    value: "$234.50",
-    time: "2 minutes ago"
-  },
-  {
-    type: "login",
-    customer: "Alice Brown",
-    value: "Dashboard view",
-    time: "5 minutes ago"
-  },
-  {
-    type: "support",
-    customer: "David Wilson",
-    value: "Ticket created",
-    time: "12 minutes ago"
-  }
-];
-const metrics = [
-  {
-    title: "Total Customers",
-    value: "12,847",
-    change: "+2.5%",
-    trend: "up",
-    icon: Users,
-    color: "primary"
-  },
-  {
-    title: "Churn Risk",
-    value: "324",
-    change: "-12%",
-    trend: "down",
-    icon: AlertTriangle,
-    color: "warning"
-  },
-  {
-    title: "Revenue at Risk",
-    value: "$45,230",
-    change: "-8.2%",
-    trend: "down",
-    icon: DollarSign,
-    color: "destructive"
-  },
-  {
-    title: "Retention Rate",
-    value: "94.2%",
-    change: "+1.2%",
-    trend: "up",
-    icon: TrendingUp,
-    color: "success"
-  }
-];
-
-export default function Dashboard() {
-  const [bestSelling, setBestSelling] = useState([]);
-  const [salesTrend, setSalesTrend] = useState([]);
-  const [neglectedProducts, setNeglectedProducts] = useState([]);
-
-useEffect(() => {
-  // Fetch best-selling products
-  fetch("http://localhost:8000/api/best-selling", {
-    headers: {
-      "x-api-key": "75f39c795fcb02286b5e5e9265e12c80e9d848b41dd089f02daeb965204dacb1",
-      "Content-Type": "application/json"
+  useEffect(() => {
+    if (!clientId || isNaN(clientId)) {
+      setError("Client ID not found. Please log in again.");
+      setLoading(false);
+      return;
     }
-  })
-    .then(res => res.json())
-    .then(setBestSelling)
-    .catch(err => console.error(err));
 
-  // Fetch sales over time
-  fetch("http://localhost:8000/api/sales-over-time", {
-    headers: {
-      "x-api-key": "75f39c795fcb02286b5e5e9265e12c80e9d848b41dd089f02daeb965204dacb1",
-      "Content-Type": "application/json"
-    }
-  })
-    .then(res => res.json())
-    .then(setSalesTrend) // you probably want a different state for this
-    .catch(err => console.error(err));
-
-    fetch("http://localhost:8000/api/neglected_items", {
-      headers: {
-        "x-api-key": "75f39c795fcb02286b5e5e9265e12c80e9d848b41dd089f02daeb965204dacb1",
-        "Content-Type": "application/json"
+    const loadAnalytics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getDashboardAnalytics(clientId);
+        setAnalytics(data);
+      } catch (err: any) {
+        console.error(err);
+        setError(err?.message || "Failed to load analytics");
+      } finally {
+        setLoading(false);
       }
-    })
-      .then(res => res.json())
-      .then(setNeglectedProducts)
-      .catch(err => console.error(err));
-}, []);
+    };
 
-//   useEffect(() => {
-// fetch("http://localhost:8000/api/best-selling")
-//   .then(res => res.json())
-//   .then(setBestSelling)
-//   .catch(err => console.error(err));
-//     // fetch("/api/sales-trend").then(res => res.json()).then(setSalesTrend);
-//     // fetch("/api/neglected-products").then(res => res.json()).then(setNeglectedProducts);
-//   }, []);
+    loadAnalytics();
+  }, [clientId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Loading analytics...</p>
+      </div>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-2">
+        <p className="text-destructive font-medium">
+          Failed to load dashboard analytics.
+        </p>
+        <p className="text-sm text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
+  const {
+    summary,
+    segments,
+    risk_distribution,
+    feature_importance,
+    churn_trend,
+    high_risk_customers,
+  } = analytics;
+
+  // Top metrics
+  const totalCustomers: number = summary.total_customers ?? 0;
+  const avgChurnRate: string = (
+    (summary.avg_churn_probability ?? 0) * 100
+  ).toFixed(1);
+  const highRiskCount: number = summary.high_risk_count ?? 0;
+  const totalRevenueAtRisk: number = summary.revenue_at_risk ?? 0;
+  const interventionsThisMonth: number = summary.interventions_this_month ?? 0;
+  const modelAccuracyPercent: string = (
+    (summary.model_accuracy ?? 0) * 100
+  ).toFixed(1);
+
+  // Segmentation cards
+  const segmentData = (segments || []).map((s: any) => ({
+    segment: s.segment,
+    count: s.count,
+    percentage: s.percentage,
+    churnRate: s.churnRate,
+    // you can change formatting if you want K notation
+    avgValue: `$${s.avgValue.toFixed(0)}`,
+    color: s.color,
+  }));
+
+  // Risk distribution for pie chart
+  const riskDistribution = risk_distribution || [];
+
+  // Feature importance for bar chart
+  const featureImportanceData = (feature_importance || []).slice(0, 6);
+
+  // Churn trend for line chart
+  const churnTrendData = churn_trend || [];
+
+  // High risk customers list
+  const highRiskCustomers = (high_risk_customers || []).slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Ecommerce Dashboard</h1>
-          <p className="text-muted-foreground">Sales, trends & neglected products</p>
+          <h1 className="text-3xl font-bold text-foreground">
+            E-Commerce Customer Churn Intelligence
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Predicting churn for your online shoppers with{" "}
+            {modelAccuracyPercent}% accuracy
+          </p>
         </div>
-        <Button>
-          View Full Report
-          <ArrowRight className="w-4 h-4 ml-2" />
+        <Button onClick={() => navigate("/high-risk")}>
+          <AlertTriangle className="h-4 w-4 mr-2" />
+          View High Risk
         </Button>
       </div>
 
-      {/* Sales Trend Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales Trend</CardTitle>
-        </CardHeader>
-        <CardContent className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={salesTrend}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="daily_revenue" stroke="#4f46e5" />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Top metric cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <MetricCard
+          title="Total Customers"
+          value={totalCustomers.toLocaleString()}
+          change={5.2}
+          trend="up"
+          icon={<Users className="h-6 w-6 text-primary" />}
+        />
+        <MetricCard
+          title="Average Churn Risk"
+          value={`${avgChurnRate}%`}
+          change={3.1}
+          trend="down"
+          icon={<TrendingDown className="h-6 w-6 text-destructive" />}
+        />
+        <MetricCard
+          title="High Risk Customers"
+          value={highRiskCount}
+          change={8.4}
+          trend="down"
+          icon={<AlertTriangle className="h-6 w-6 text-warning" />}
+        />
+        <MetricCard
+          title="Total Revenue at Risk"
+          value={`$${(totalRevenueAtRisk / 1000).toFixed(0)}K`}
+          icon={<DollarSign className="h-6 w-6 text-warning" />}
+        />
+        <MetricCard
+          title="Interventions This Month"
+          value={interventionsThisMonth.toString()}
+          change={12.3}
+          trend="up"
+          icon={<Target className="h-6 w-6 text-success" />}
+        />
+        <MetricCard
+          title="Model Accuracy"
+          value={`${modelAccuracyPercent}%`}
+          change={1.2}
+          trend="up"
+          icon={<Activity className="h-6 w-6 text-primary" />}
+        />
+      </div>
 
-      {/* Best Selling Products */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top 10 Best Selling Products</CardTitle>
-        </CardHeader>
-        <CardContent className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={bestSelling}>
-              <XAxis dataKey="name" />
-              <YAxis />
+      {/* Segmentation */}
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-4">
+          Customer Segmentation
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {segmentData.map((segment: any) => (
+            <CustomerSegmentCard key={segment.segment} {...segment} />
+          ))}
+        </div>
+      </div>
+
+      {/* Risk distribution + feature importance */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Churn Risk Distribution
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={riskDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) =>
+                  `${name}: ${(percent * 100).toFixed(0)}%`
+                }
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {riskDistribution.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
               <Tooltip />
-              <Bar dataKey="total_quantity_sold" fill="#22c55e" />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Top Churn Risk Factors
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={featureImportanceData} layout="vertical">
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+              />
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+              <YAxis
+                type="category"
+                dataKey="feature"
+                width={150}
+                stroke="hsl(var(--muted-foreground))"
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "var(--radius)",
+                }}
+              />
+              <Bar
+                dataKey="importance"
+                fill="hsl(var(--primary))"
+                radius={[0, 4, 4, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Neglected Products */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Neglected Products (No Sales)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {neglectedProducts.length === 0 ? (
-            <p className="text-muted-foreground">No neglected products 🎉</p>
-          ) : (
-            <ul className="list-disc pl-5">
-              {neglectedProducts.map((p, idx) => (
-                <li key={idx}>{p.name || p.product_id}</li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Scroll Down: Your Existing Cards */}
-      {/* Insert your old metrics, High Risk Customers, Recent Activity sections here */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => (
-          <Card key={index} className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {metric.title}
-              </CardTitle>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-${metric.color}/10`}>
-                <metric.icon className={`w-4 h-4 text-${metric.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{metric.value}</div>
-              <div className="flex items-center text-xs mt-1">
-                {metric.trend === "up" ? (
-                  <TrendingUp className="w-3 h-3 text-success mr-1" />
-                ) : (
-                  <TrendingDown className="w-3 h-3 text-destructive mr-1" />
-                )}
-                <span className={metric.trend === "up" ? "text-success" : "text-destructive"}>
-                  {metric.change}
-                </span>
-                <span className="text-muted-foreground ml-1">from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        </Card>
       </div>
-        {    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">High Risk Customers</CardTitle>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {highRiskCustomers.map((customer, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">{customer.name}</div>
-                  <div className="text-sm text-muted-foreground">{customer.email}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Last activity: {customer.lastActivity}
-                  </div>
-                </div>
-                <div className="text-right space-y-1">
-                  <Badge variant={customer.riskScore > 80 ? "destructive" : "warning"}>
-                    {customer.riskScore}% risk
-                  </Badge>
-                  <div className="text-sm font-medium text-foreground">{customer.value}</div>
-                </div>
-              </div>
-            ))}
-            <Button variant="outline" className="w-full mt-4">
-              View All High Risk Customers
-            </Button>
-          </CardContent>
-        </Card>
 
-        {/* Recent Activity */}
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
-            <Button variant="ghost" size="sm">
-              <Activity className="w-4 h-4 mr-2" />
-              Live
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentEvents.map((event, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center
-                  ${event.type === 'purchase' ? 'bg-success/10 text-success' : 
-                    event.type === 'login' ? 'bg-primary/10 text-primary' : 
-                    'bg-warning/10 text-warning'}`}>
-                  {event.type === 'purchase' ? '💰' : 
-                   event.type === 'login' ? '👤' : '🎧'}
+      {/* Churn trends */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Churn Rate Trends & Interventions
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={churnTrendData}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--border))"
+            />
+            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+            <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="hsl(var(--muted-foreground))"
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+              }}
+            />
+            <Legend />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="churnRate"
+              stroke="#ef4444"
+              strokeWidth={2}
+              name="Churn Rate %"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="interventions"
+              stroke="#10b981"
+              strokeWidth={2}
+              name="Interventions"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* High risk customers */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Recently Identified High-Risk Customers
+        </h3>
+        <div className="space-y-4">
+          {highRiskCustomers.map((customer: any) => (
+            <div
+              key={customer.id}
+              className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <h4 className="font-semibold text-foreground">
+                      {customer.name}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      {customer.email}
+                    </p>
+                  </div>
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-destructive/10 text-destructive">
+                    {(customer.churnProbability * 100).toFixed(0)}% Risk
+                  </span>
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">{event.customer}</div>
-                  <div className="text-sm text-muted-foreground">{event.value}</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {customer.topRiskFactors.slice(0, 2).map(
+                    (factor: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded"
+                      >
+                        {factor}
+                      </span>
+                    )
+                  )}
                 </div>
-                <div className="text-xs text-muted-foreground">{event.time}</div>
               </div>
-            ))}
-            <Button variant="outline" className="w-full mt-4">
-              View Event Explorer
-            </Button>
-          </CardContent>
-        </Card>
-      </div> }
-             <Card className="shadow-card">
-         <CardHeader>
-           <CardTitle className="text-lg font-semibold">Churn Trend Analysis</CardTitle>
-         </CardHeader>
-         <CardContent>
-           <div className="h-64 bg-muted/30 rounded-lg flex items-center justify-center">
-             <div className="text-center">
-               <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-               <p className="text-muted-foreground">Chart visualization will be implemented</p>
-             </div>
-           </div>
-         </CardContent>
-       </Card>
-      
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/customers`)}
+              >
+                View Details
+              </Button>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
-}
+};
 
-
+export default Dashboard;

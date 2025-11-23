@@ -1,202 +1,287 @@
-import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, AlertTriangle, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Mail, Phone, Gift, TrendingUp } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { fetchHighRiskCustomers } from "@/services/analysis"; // ⬅️ adjust path if needed
 
-type Range = { from: string; to: string };
-const DEFAULT_RANGE: Range = { from: "2025-07-01", to: "2025-08-14" }; // set dynamically in your app
+type HighRiskCustomer = {
+  id: string;
+  name: string;
+  email: string;
+  segment: string;
+  daysSinceLastPurchase: number;
+  churnProbability: number; // 0..1
+  totalSpend: number;
+  topRiskFactors: string[];
+  recommendations: string[];
+};
 
-export default function EventExplorer() {
-  const [range, setRange] = useState<Range>(DEFAULT_RANGE);
-  const [funnel, setFunnel] = useState<any>(null);
-  const [topProducts, setTopProducts] = useState<any[]>([]);
-  const [neglected, setNeglected] = useState<any[]>([]);
-  const [cart, setCart] = useState<any>(null);
-  const [wishlist, setWishlist] = useState<any>(null);
-  const [timeseries, setTimeseries] = useState<any[]>([]);
+type HighRiskResponse = {
+  highRiskCount: number;
+  revenueAtRisk: number;
+  avgChurnProbability: number; // 0..1
+  customers: HighRiskCustomer[];
+  // if you later add total_customers on backend, you can extend this type
+};
 
-  const query = useMemo(() => `?from=${range.from}&to=${range.to}&client_id=1`, [range]);
+const EventExplorer = () => {
+  const [data, setData] = useState<HighRiskResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/insights/funnel${query}`).then(r=>r.json()),
-      fetch(`/api/insights/top-products${query}`).then(r=>r.json()),
-      fetch(`/api/insights/neglected-products${query}`).then(r=>r.json()),
-      fetch(`/api/insights/cart-health${query}`).then(r=>r.json()),
-      fetch(`/api/insights/wishlist-impact${query}`).then(r=>r.json()),
-      fetch(`/api/insights/timeseries${query}`).then(r=>r.json()),
-    ]).then(([f,t,n,c,w,ts]) => {
-      setFunnel(f); setTopProducts(t); setNeglected(n); setCart(c); setWishlist(w); setTimeseries(ts);
-    });
-  }, [query]);
+    // Get clientId from localStorage and validate it
+    const clientIdStr = localStorage.getItem("client_id");
+    const clientId = clientIdStr ? parseInt(clientIdStr, 10) : null;
 
-  const funnelRates = useMemo(() => {
-    if (!funnel) return null;
-    const { sessions, add_to_cart_sessions, order_sessions } = funnel;
-    const toAtc = sessions ? (add_to_cart_sessions / sessions) * 100 : 0;
-    const toOrder = add_to_cart_sessions ? (order_sessions / add_to_cart_sessions) * 100 : 0;
-    return { toAtc, toOrder };
-  }, [funnel]);
+    if (!clientId || isNaN(clientId)) {
+      setError("Client ID not found. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetchHighRiskCustomers(clientId, { limit: 500 });
+        setData(res);
+      } catch (err: any) {
+        console.error("Failed to fetch high risk customers:", err);
+        setError(err?.message || "Failed to load high risk customers");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <p className="text-muted-foreground text-sm">Loading high-risk shoppers…</p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-destructive">
+          Failed to load high-risk shoppers: {error || "Unknown error"}
+        </p>
+      </div>
+    );
+  }
+
+  const highRiskCustomers = data.customers || [];
+  const highRiskCount = data.highRiskCount ?? highRiskCustomers.length;
+  const totalAtRisk = data.revenueAtRisk ?? 0;
+  const avgChurnProb = data.avgChurnProbability ?? 0;
+
+  // If backend later returns total_customers, plug it here.
+  const totalCustomers = (highRiskCustomers.length || highRiskCount) || 1;
+  const pctOfTotal = totalCustomers
+    ? (highRiskCount / totalCustomers) * 100
+    : 0;
 
   return (
     <div className="space-y-6">
-      {/* Filters / Date Range */}
-      <Card>
-        <CardContent className="py-4 flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">From</span>
-            <Input type="date" value={range.from} onChange={e => setRange(r => ({...r, from: e.target.value}))} />
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-8 w-8 text-destructive" />
+            <h1 className="text-3xl font-bold text-foreground">
+              High-Risk Shoppers
+            </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">To</span>
-            <Input type="date" value={range.to} onChange={e => setRange(r => ({...r, to: e.target.value}))} />
-          </div>
-          <Button variant="outline" onClick={()=>setRange(DEFAULT_RANGE)}>Reset</Button>
-        </CardContent>
-      </Card>
+          <p className="text-muted-foreground mt-1">
+            E-commerce customers likely to churn - take action now
+          </p>
+        </div>
+      </div>
 
-      {/* Top: Timeseries & Funnel */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="h-80">
-          <CardHeader><CardTitle>Revenue & Orders Over Time</CardTitle></CardHeader>
-          <CardContent className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timeseries}>
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="revenue" />
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Anomalies are highlighted in API (use to trigger alerts).
-            </div>
-          </CardContent>
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="p-6 border-destructive/50">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              High-Risk Count
+            </p>
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+          </div>
+          <p className="text-3xl font-bold text-foreground">
+            {highRiskCount}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {pctOfTotal.toFixed(1)}% of total
+          </p>
         </Card>
-        <Card className="h-80">
-          <CardHeader><CardTitle>Funnel Conversion</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-3 gap-4">
-            <Stat label="Sessions" value={funnel?.sessions ?? 0} />
-            <Stat label="Add to Cart" value={funnel?.add_to_cart_sessions ?? 0} sub={`${funnelRates?.toAtc?.toFixed(1)}%`} />
-            <Stat label="Orders" value={funnel?.order_sessions ?? 0} sub={`${funnelRates?.toOrder?.toFixed(1)}%`} />
-          </CardContent>
+
+        <Card className="p-6 border-warning/50">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Revenue at Risk
+            </p>
+            <TrendingUp className="h-5 w-5 text-warning" />
+          </div>
+          <p className="text-3xl font-bold text-foreground">
+            ${(totalAtRisk / 1000).toFixed(0)}K
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Total customer value
+          </p>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Avg. Churn Probability
+            </p>
+          </div>
+          <p className="text-3xl font-bold text-foreground">
+            {(avgChurnProb * 100).toFixed(1)}%
+          </p>
+          <Progress value={avgChurnProb * 100} className="mt-2 h-2" />
         </Card>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="products" className="w-full">
-        <TabsList className="grid grid-cols-4 w-full">
-          <TabsTrigger value="products">Product Performance</TabsTrigger>
-          <TabsTrigger value="cart">Cart Health</TabsTrigger>
-          <TabsTrigger value="wishlist">Wishlist Impact</TabsTrigger>
-          <TabsTrigger value="opps">Opportunities</TabsTrigger>
-        </TabsList>
+      <Card className="p-6 bg-destructive/5 border-destructive/20">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
+          Bulk Actions
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Apply retention strategies to all high-risk customers at once
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button>
+            <Mail className="h-4 w-4 mr-2" />
+            Send Retention Email
+          </Button>
+          <Button variant="outline">
+            <Phone className="h-4 w-4 mr-2" />
+            Schedule Calls
+          </Button>
+          <Button variant="outline">
+            <Gift className="h-4 w-4 mr-2" />
+            Apply Discount Code
+          </Button>
+        </div>
+      </Card>
 
-        <TabsContent value="products" className="space-y-6 mt-4">
-          <Card className="h-96">
-            <CardHeader><CardTitle>Top Products by Quantity</CardTitle></CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topProducts}>
-                  <XAxis dataKey="product_id" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="total_qty" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Neglected Products (engaged, no sales)</CardTitle></CardHeader>
-            <CardContent>
-              {neglected.length === 0 ? (
-                <p className="text-muted-foreground">No neglected products 🎉</p>
-              ) : (
-                <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {neglected.map((p:any) => <li key={p.product_id} className="p-3 rounded-lg bg-muted/30">{p.product_id}</li>)}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-foreground">
+          Individual Customer Actions
+        </h2>
+        {highRiskCustomers.map((customer) => (
+          <Card
+            key={customer.id}
+            className="p-6 border-destructive/30 hover:border-destructive/60 transition-colors"
+          >
+            <div className="space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {customer.name}
+                    </h3>
+                    <Badge className="bg-destructive text-destructive-foreground">
+                      {(customer.churnProbability * 100).toFixed(0)}% Churn
+                      Risk
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {customer.email}
+                  </p>
+                  <div className="flex gap-4 mt-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Customer Value
+                      </p>
+                      <p className="text-lg font-bold text-foreground">
+                        ${(customer.totalSpend / 1000).toFixed(1)}K
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Last Purchase
+                      </p>
+                      <p className="text-lg font-bold text-foreground">
+                        {customer.daysSinceLastPurchase}d ago
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Segment
+                      </p>
+                      <p className="text-lg font-bold text-foreground">
+                        {customer.segment}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        <TabsContent value="cart" className="space-y-6 mt-4">
-          <Card>
-            <CardHeader><CardTitle>Cart KPIs</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Stat label="Carts Started" value={cart?.carts_started ?? 0} />
-              <Stat label="Carts → Orders" value={cart?.carts_converted ?? 0}
-                    sub={`${cart && cart.carts_started ? ((cart.carts_converted/cart.carts_started)*100).toFixed(1) : 0}%`} />
-              <Stat label="Removals" value={cart?.removed ?? 0} />
-              <Stat label="Qty Updates" value={cart?.updates ?? 0} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Average Cart Value</CardTitle></CardHeader>
-            <CardContent className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={[{name:"ACV", value: cart?.acv ?? 0 }, {name:"Goal", value: Math.max(0, (cart?.acv ?? 0)*0.3)}]} dataKey="value" outerRadius={120} label />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    Critical Risk Factors
+                  </h4>
+                  <ul className="space-y-2">
+                    {customer.topRiskFactors.map((factor, idx) => (
+                      <li
+                        key={idx}
+                        className="text-sm flex items-start gap-2"
+                      >
+                        <span className="text-destructive mt-0.5">•</span>
+                        <span className="text-foreground">{factor}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-        <TabsContent value="wishlist" className="space-y-6 mt-4">
-          <Card>
-            <CardHeader><CardTitle>Wishlist Conversion Lift</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Stat label="Wishlist→Order" value={`${((wishlist?.wishlist_conversion_rate ?? 0)*100).toFixed(1)}%`} />
-              <Stat label="No-Wishlist→Order" value={`${((wishlist?.non_wishlist_conversion_rate ?? 0)*100).toFixed(1)}%`} />
-              <div className="col-span-2">
-                <Button className="w-full" variant="outline">
-                  Create campaign: “Convert Wishlists” <TrendingUp className="w-4 h-4 ml-2" />
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-success" />
+                    Immediate Actions Required
+                  </h4>
+                  <ul className="space-y-2">
+                    {customer.recommendations.map((rec, idx) => (
+                      <li
+                        key={idx}
+                        className="text-sm flex items-start gap-2"
+                      >
+                        <span className="text-success mt-0.5">✓</span>
+                        <span className="text-foreground">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-border">
+                <Button className="flex-1">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Personalized Email
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Schedule Call
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Gift className="h-4 w-4 mr-2" />
+                  Apply 20% Discount
                 </Button>
               </div>
-            </CardContent>
+            </div>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="opps" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader><CardTitle>Quick Opportunities</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              <Button variant="secondary" onClick={()=>alert("Filter: Neglected products with high add_to_cart events")}>
-                Push neglected-but-engaged
-              </Button>
-              <Button variant="secondary" onClick={()=>alert("Filter: High remove_from_cart rate")}>
-                Fix high-abandon carts
-              </Button>
-              <Button variant="secondary" onClick={()=>alert("Filter: Wishlist → Order segments")}>
-                Retarget wishlisters
-              </Button>
-              <Button variant="secondary" onClick={()=>alert("Filter: Price-sensitive (many qty updates)")}>
-                Test price incentives
-              </Button>
-              <Button variant="secondary" onClick={()=>alert("Filter: Anomaly days to replicate or fix")}>
-                Investigate anomaly days
-              </Button>
-              <Button variant="secondary" onClick={()=>alert("Filter: Top sellers low margin → upsell bundles")}>
-                Bundle top sellers
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        ))}
+      </div>
     </div>
   );
-}
+};
 
-function Stat({ label, value, sub }:{label:string; value:any; sub?:string}) {
-  return (
-    <div className="p-4 rounded-xl bg-muted/30">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-2xl font-semibold">{value}</div>
-      {sub ? <div className="text-xs text-muted-foreground mt-1">{sub}</div> : null}
-    </div>
-  );
-}
+export default EventExplorer;

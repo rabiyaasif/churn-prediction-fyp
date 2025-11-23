@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation, NavLink, useNavigate } from "react-router-dom";
+import { getClientProfile } from "@/services/analysis";
 
 import { 
   BarChart3, Search, Compass, AlertTriangle, Users, 
   FileText, Settings, Bell, Book, Shield, User,
-  Calendar, ChevronDown, Menu, X
+  Calendar, ChevronDown, Menu, X, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +25,9 @@ const sidebarItems = [
 
   { title: "Churn Prediction", icon: AlertTriangle, path: "/dashboard/churn", badge: "12" },
   { title: "Customer Profiles", icon: Users, path: "/dashboard/customers", badge: null },
+  { title: "Bulk Upload", icon: Upload, path: "/dashboard/bulk-upload", badge: null },
   { title: "Reports", icon: FileText, path: "/dashboard/reports", badge: null },
   { title: "Settings", icon: Settings, path: "/dashboard/settings", badge: null },
-  { title: "Notifications", icon: Bell, path: "/dashboard/notifications", badge: "3" },
 ];
 
 const bottomItems = [
@@ -36,12 +37,34 @@ const bottomItems = [
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [clientName, setClientName] = useState("Loading...");
+  const [clientEmail, setClientEmail] = useState("Loading...");
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
-    const handleLogout = () => {
-    localStorage.removeItem("apiKey");
-    localStorage.removeItem("clientId");
+  // Load client profile on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await getClientProfile();
+        setClientName(profile.name || "User");
+        setClientEmail(profile.email || "");
+      } catch (err: any) {
+        console.error("Failed to load profile:", err);
+        setClientName("User");
+        setClientEmail("");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("api_key");
+    localStorage.removeItem("client_id");
     console.log("Logging out, going to Landing...");
     navigate("/", { replace: true }); // ✅ Redirects to Landing.tsx
   };
@@ -143,21 +166,16 @@ export function DashboardLayout() {
                   <User className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-medium">John Doe</p>
-                  <p className="text-xs text-sidebar-foreground/70">john@company.com</p>
+                  <p className="text-sm font-medium">{loading ? "Loading..." : clientName}</p>
+                  <p className="text-xs text-sidebar-foreground/70">{loading ? "" : clientEmail || "No email"}</p>
                 </div>
                 <ChevronDown className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>Account Settings</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
-                
                 Logout
-                </DropdownMenuItem>
-
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -209,13 +227,9 @@ export function DashboardLayout() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
-  Logout
-</DropdownMenuItem>
-
+                    Logout
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

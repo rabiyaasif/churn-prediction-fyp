@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { BarChart3, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -17,6 +18,12 @@ export default function Login() {
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
+  // Validate inputs
+  if (!formData.email || !formData.password) {
+    alert("Please enter both email and password");
+    return;
+  }
+
   try {
     const response = await fetch("http://localhost:8000/clients/login", {
       method: "POST",
@@ -24,28 +31,40 @@ const handleSubmit = async (e: React.FormEvent) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || "Login failed");
+      let errorMessage = "Login failed";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorMessage;
+      } catch {
+        // If response is not JSON, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
 
+    // Validate response data
+    if (!data.api_key || !data.client_id) {
+      throw new Error("Invalid response from server. Please try again.");
+    }
+
     // Store API key in localStorage for later requests
     localStorage.setItem("api_key", data.api_key);
-
-    console.log("Logged in successfully:", data);
+    localStorage.setItem("client_id", String(data.client_id));
+    console.log("Logged in successfully:", data.api_key, data.client_id);
 
     // Redirect to dashboard
-    window.location.href = "/dashboard";
-  } catch (err) {
+    navigate("/dashboard");
+  } catch (err: any) {
     console.error("Login error:", err);
-    alert(err.message);
+    alert(err?.message || "Login failed. Please check your email and password and try again.");
   }
 };
 

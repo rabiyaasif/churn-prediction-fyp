@@ -39,6 +39,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
 
     const data = await response.json();
+    localStorage.setItem("api_key", data.api_key);
+    localStorage.setItem("client_id", data.client_id);
     console.log("Signup successful:", data);
 
     // Redirect to onboarding
