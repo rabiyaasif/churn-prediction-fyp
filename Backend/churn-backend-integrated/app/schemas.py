@@ -39,6 +39,13 @@ class ClientLogin(BaseModel):
     email: str
     password: str
 
+class ClientProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+
 class UserCreate(BaseModel):
     # client_id: Optional[int]
     user_id: str

@@ -19,7 +19,7 @@ EVENT_TYPES = [
     "cart_quantity_updated"
 ]
 
-API_KEY = "75f39c795fcb02286b5e5e9265e12c80e9d848b41dd089f02daeb965204dacb1"  # Replace with your actual API key
+API_KEY = "bda972a61031688d0f06ecb0601835fd0315a2fb1de3bbed6fa4e5a8cd0afcfe"  # Replace with your actual API key
 USERS_ENDPOINT = "http://localhost:8000/users/"
 EVENTS_ENDPOINT = "http://localhost:8000/events/bulk/"
 

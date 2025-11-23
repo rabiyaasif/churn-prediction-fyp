@@ -1,0 +1,32 @@
+product_id,name,description,category,price,currency
+prod_001,Wireless Earbuds,Bluetooth 5.3 earbuds with noise cancellation,Electronics,49.99,USD
+prod_002,Smart Watch,Fitness tracking smartwatch with heart rate monitor,Electronics,199.99,USD
+prod_003,Coffee Maker,12-cup programmable coffee maker,Home & Kitchen,79.99,USD
+prod_004,Running Shoes,Lightweight running shoes with cushioned sole,Sports & Outdoors,89.99,USD
+prod_005,Laptop Stand,Adjustable aluminum laptop stand,Office Supplies,34.99,USD
+prod_006,Wireless Mouse,Ergonomic wireless mouse with long battery life,Electronics,29.99,USD
+prod_007,Yoga Mat,Non-slip yoga mat with carrying strap,Sports & Outdoors,24.99,USD
+prod_008,Desk Lamp,LED desk lamp with adjustable brightness,Home & Kitchen,45.99,USD
+prod_009,Backpack,Waterproof backpack with laptop compartment,Travel & Luggage,59.99,USD
+prod_010,Bluetooth Speaker,Portable Bluetooth speaker with 360° sound,Electronics,39.99,USD
+prod_011,Water Bottle,Stainless steel insulated water bottle,Home & Kitchen,19.99,USD
+prod_012,Phone Case,Protective phone case with screen protector,Electronics,14.99,USD
+prod_013,Keyboard,Mechanical keyboard with RGB lighting,Electronics,89.99,USD
+prod_014,Monitor Stand,Wooden monitor stand with storage drawer,Office Supplies,49.99,USD
+prod_015,Headphones,Over-ear headphones with active noise cancellation,Electronics,149.99,USD
+prod_016,Desk Chair,Ergonomic office chair with lumbar support,Furniture,199.99,USD
+prod_017,Standing Desk,Adjustable height standing desk,Furniture,299.99,USD
+prod_018,Webcam,4K webcam with built-in microphone,Electronics,79.99,USD
+prod_019,Microphone,USB condenser microphone for streaming,Electronics,99.99,USD
+prod_020,Ring Light,LED ring light with tripod stand,Electronics,49.99,USD
+prod_021,Notebook Set,Set of 3 premium notebooks,Office Supplies,24.99,USD
+prod_022,Pen Set,Luxury pen set with gift box,Office Supplies,34.99,USD
+prod_023,Desk Organizer,Multi-compartment desk organizer,Office Supplies,19.99,USD
+prod_024,Cable Management,Under-desk cable management system,Office Supplies,14.99,USD
+prod_025,Monitor,27-inch 4K monitor with HDR,Electronics,349.99,USD
+prod_026,Tablet,10-inch tablet with stylus,Electronics,249.99,USD
+prod_027,Smart Home Hub,Central hub for smart home devices,Electronics,99.99,USD
+prod_028,Security Camera,Wireless security camera with night vision,Electronics,79.99,USD
+prod_029,Smart Bulb,WiFi-enabled color-changing LED bulb,Home & Kitchen,19.99,USD
+prod_030,Air Purifier,HEPA air purifier for large rooms,Home & Kitchen,149.99,USD
+

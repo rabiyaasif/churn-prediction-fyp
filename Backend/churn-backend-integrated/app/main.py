@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime
 from typing import List, Union
 
-from fastapi import FastAPI, Body, Depends, Header, HTTPException, status
+from fastapi import FastAPI, Body, Depends, Header, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, conint, confloat
 
@@ -19,6 +19,19 @@ from app import models, schemas
 # ✅ ML utilities
 from app.ml import predict_churn, get_expected_features
 from app import ml
+from app.meta import stamp_meta
+
+from app.deps_common import common_query
+
+from app.meta import MODEL_VERSION, LAST_TRAINED_AT  # NEW
+          
+import re
+
+from app.routes import routes_analytics
+from app.routes import churn_page
+from app.routes import routes_customer_profiles
+from app.routes import routes_insights
+
 
 
 app = FastAPI()
@@ -62,6 +75,15 @@ async def verify_api_key(x_api_key: str = Header(...), db: AsyncSession = Depend
 # --------------------------
 @app.post("/clients/", response_model=schemas.ClientOut)
 async def create_client(client: schemas.ClientCreate, db: AsyncSession = Depends(get_db)):
+    # Check if email already exists
+    result = await db.execute(select(models.Client).where(models.Client.email == client.email))
+    existing_client = result.scalars().first()
+    if existing_client:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered. Please use a different email or log in."
+        )
+    
     api_key = secrets.token_hex(32)
     new_client = models.Client(
         name=client.name,
@@ -79,11 +101,45 @@ async def create_client(client: schemas.ClientCreate, db: AsyncSession = Depends
 
 @app.post("/clients/login")
 async def login_client(login_data: schemas.ClientLogin, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(models.Client).where(models.Client.email == login_data.email))
+    # Normalize email (trim and lowercase for case-insensitive matching)
+    email_input = login_data.email.strip() if login_data.email else ""
+    password_input = login_data.password.strip() if login_data.password else ""
+    
+    if not email_input:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is required"
+        )
+    
+    if not password_input:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is required"
+        )
+    
+    # Use case-insensitive email matching
+    # Try both exact match (case-insensitive) and ilike for compatibility
+    result = await db.execute(
+        select(models.Client).where(
+            models.Client.email.ilike(email_input)
+        )
+    )
     client = result.scalars().first()
-    if not client or client.password != login_data.password:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-    return {"api_key": client.api_key}
+    
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid email or password"
+        )
+    
+    # Compare passwords (exact match, trimmed)
+    if client.password != password_input:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid email or password"
+        )
+    
+    return {"api_key": client.api_key, "client_id": client.client_id}
 
 
 @app.get("/clients/{client_id}", response_model=schemas.ClientOut)
@@ -119,6 +175,95 @@ async def delete_client(client_id: str, db: AsyncSession = Depends(get_db)):
 
 
 # --------------------------
+# Client Profile (require API key)
+# --------------------------
+@app.get("/clients/profile/me", response_model=schemas.ClientOut)
+async def get_my_profile(
+    db: AsyncSession = Depends(get_db),
+    client: models.Client = Depends(verify_api_key),
+):
+    """Get current client's profile using API key"""
+    return client
+
+
+@app.put("/clients/profile/me", response_model=schemas.ClientOut)
+async def update_my_profile(
+    profile_update: schemas.ClientProfileUpdate,
+    db: AsyncSession = Depends(get_db),
+    client: models.Client = Depends(verify_api_key),
+):
+    """Update current client's profile. Password is optional."""
+    has_changes = False
+    
+    # Update name if first_name or last_name provided
+    if profile_update.first_name is not None or profile_update.last_name is not None:
+        # Get current name parts (assume first word is first name, rest is last name)
+        current_name_parts = client.name.split(" ") if client.name else []
+        current_first = current_name_parts[0] if len(current_name_parts) > 0 else ""
+        current_last = " ".join(current_name_parts[1:]) if len(current_name_parts) > 1 else ""
+        
+        # Use provided values or keep existing
+        new_first = profile_update.first_name if profile_update.first_name is not None else current_first
+        new_last = profile_update.last_name if profile_update.last_name is not None else current_last
+        
+        # Combine into full name
+        name_parts = []
+        if new_first:
+            name_parts.append(new_first)
+        if new_last:
+            name_parts.append(new_last)
+        
+        new_name = " ".join(name_parts).strip()
+        
+        if new_name and new_name != client.name:
+            client.name = new_name
+            has_changes = True
+    
+    # Update email if provided
+    if profile_update.email is not None and profile_update.email != client.email:
+        # Check if email already exists for another client
+        result = await db.execute(
+            select(models.Client).where(
+                models.Client.email == profile_update.email,
+                models.Client.client_id != client.client_id
+            )
+        )
+        existing_client = result.scalars().first()
+        if existing_client:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered by another account."
+            )
+        client.email = profile_update.email
+        has_changes = True
+    
+    # Update password if both current and new passwords are provided
+    # If only one is provided, ignore it (don't update password, don't error)
+    if profile_update.current_password is not None and profile_update.new_password is not None:
+        # Verify current password
+        if client.password != profile_update.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect"
+            )
+        # Update password
+        client.password = profile_update.new_password
+        has_changes = True
+    # If only one password field is provided, silently ignore it (no error)
+    
+    # Only commit if there are actual changes
+    if not has_changes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No changes to save. Please update at least one field."
+        )
+    
+    await db.commit()
+    await db.refresh(client)
+    return client
+
+
+# --------------------------
 # Analytics (require API key)
 # --------------------------
 @app.get("/api/best-selling")
@@ -128,11 +273,57 @@ async def best_selling(db: AsyncSession = Depends(get_db), client: models.Client
     return result.mappings().all()
 
 
-@app.get("/api/sales-over-time")
-async def sales_over_time(db: AsyncSession = Depends(get_db), client: models.Client = Depends(verify_api_key)):
+# @app.get("/api/sales-over-time")
+# async def sales_over_time(db: AsyncSession = Depends(get_db), client: models.Client = Depends(verify_api_key)):
     q = text("SELECT * FROM sales_over_time WHERE client_id = :client_id;")
+    base_sql = """
+        SELECT *
+        FROM sales_over_time
+        WHERE client_id = :client_id
+          AND date >= :from::date
+          AND date < (:to::date + INTERVAL '1 day')
+        ORDER BY date ASC
+        LIMIT :limit OFFSET :offset
+    """
+    params = {
+        "client_id": client.client_id,
+        "from": str(q["from"]),
+        "to": str(q["to"]),
+        "limit": q["limit"],
+        "offset": q["offset"],
+    }
+    result = await db.execute(text(base_sql), params)
     result = await db.execute(q, {"client_id": client.client_id})
     return result.mappings().all()
+
+@app.get("/api/sales-over-time")
+async def sales_over_time(
+    q = Depends(common_query),
+    db: AsyncSession = Depends(get_db),
+    client: models.Client = Depends(verify_api_key)
+):
+    base_sql = """
+        SELECT *
+        FROM sales_over_time
+        WHERE client_id = :client_id
+          AND date >= :from::date
+          AND date < (:to::date + INTERVAL '1 day')
+        ORDER BY date ASC
+        LIMIT :limit OFFSET :offset
+    """
+    params = {
+        "client_id": client.client_id,
+        "from": str(q["from"]),
+        "to": str(q["to"]),
+        "limit": q["limit"],
+        "offset": q["offset"],
+    }
+    result = await db.execute(text(base_sql), params)
+    rows = result.mappings().all()
+    return stamp_meta(rows)
+
+
+
 
 
 @app.get("/api/neglected_items")
@@ -161,6 +352,26 @@ async def create_user(
     await db.commit()
     await db.refresh(new_user)
     return new_user
+
+
+@app.post("/users/bulk", status_code=201)
+async def bulk_insert_users(
+    users: List[schemas.UserCreate],
+    db: AsyncSession = Depends(get_db),
+    client: models.Client = Depends(verify_api_key),
+):
+    objs = [
+        models.User(
+            client_id=client.client_id,
+            user_id=u.user_id,
+            email=u.email,
+            name=u.name,
+        )
+        for u in users
+    ]
+    db.add_all(objs)
+    await db.commit()
+    return {"inserted": len(objs)}
 
 
 @app.put("/users/{user_id}", response_model=schemas.UserOut)
@@ -292,15 +503,49 @@ async def delete_product(
 # --------------------------
 @app.post("/events/bulk", status_code=201)
 async def bulk_insert_events(
-    events: Union[schemas.EventCreate, List[schemas.EventCreate]],
+    request: Request,
     db: AsyncSession = Depends(get_db),
     client: models.Client = Depends(verify_api_key),
 ):
-    if isinstance(events, schemas.EventCreate):
-        events = [events]
+    try:
+        body = await request.json()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid JSON in request body: {str(e)}"
+        )
+    
+    # Normalize to list format
+    if isinstance(body, dict):
+        # Single event object
+        try:
+            event = schemas.EventCreate(**body)
+            events_list = [event]
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid event data: {str(e)}"
+            )
+    elif isinstance(body, list):
+        # List of events
+        events_list = []
+        for idx, item in enumerate(body):
+            try:
+                event = schemas.EventCreate(**item)
+                events_list.append(event)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Invalid event in array at index {idx}: {str(e)}"
+                )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid request body. Expected a single event object or an array of events."
+        )
 
     objs = []
-    for ev in events:
+    for ev in events_list:
         objs.append(
             models.Event(
                 client_id=client.client_id,
@@ -357,9 +602,51 @@ class ChurnFeatures(BaseModel):
 from fastapi.responses import JSONResponse
 import traceback
 
-
 @app.post("/predict")
-async def predict_endpoint(instances: List[ChurnFeatures] = Body(...), threshold: float = 0.5):
+async def predict_endpoint(
+    instances: List[ChurnFeatures] = Body(...), 
+    threshold: float = 0.5
+):
+    try:
+        # Convert Pydantic objects → raw dicts
+        payload = [i.model_dump() for i in instances]
+
+        # Get predictions
+        results = await predict_churn(payload)
+
+        output = []
+        for i, r in enumerate(results):
+            p = r.get("probability")
+            y = int(r.get("prediction", 0))
+
+            # fallback if no probas
+            score = p if p is not None else (1.0 if y == 1 else 0.0)
+
+            output.append({
+                "index": r.get("index", i),
+
+                # ✅ FIXED HERE — return original input!
+                "features": instances[i].model_dump(),
+
+                "prediction": y,
+                "probability": p,
+                "threshold": threshold,
+                "is_churn": score >= threshold,
+                "label": "churn" if score >= threshold else "retain"
+            })
+
+        # ✅ add metadata
+        return stamp_meta({
+            "results": output,
+            "count": len(output)
+        })
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "traceback": traceback.format_exc()}
+        )
+
     try:
         payload = [i.model_dump() for i in instances]
         results = await predict_churn(payload)
@@ -379,7 +666,8 @@ async def predict_endpoint(instances: List[ChurnFeatures] = Body(...), threshold
                 "is_churn": score >= threshold,
                 "label": "churn" if score >= threshold else "retain"
             })
-        return {"results": out}
+        return stamp_meta({"results": out})
+
     except Exception as e:
         return JSONResponse(
             status_code=500,
@@ -454,7 +742,11 @@ async def predict_for_client(
             "features": payload[i],  # helpful for debugging/FE display
         })
 
-    return {"results": out, "count": len(out)}
+    # return {"results": out, "count": len(out)}
+    return stamp_meta({"results": out , "count": len(out)})
+   
+
+
 
 @app.get("/model/names")
 def model_names():
@@ -468,13 +760,82 @@ def model_names():
 # --------------------------
 # Model meta & health
 # --------------------------
+# @app.get("/model/meta")
+# async def model_meta():
+#     try:
+#         feats = get_expected_features()
+#         return {"status": "ok", "features": feats}
+#     except Exception as e:
+#         return {"status": "error", "error": str(e), "features": None}
+
+
+
+
+
+FRIENDLY = {
+    "added_to_wishlist": "Added to Wishlist",
+    "removed_from_wishlist": "Removed from Wishlist",
+    "added_to_cart": "Added to Cart",
+    "removed_from_cart": "Removed from Cart",
+    "cart_quantity_updated": "Cart Qty Updated",
+    "total_sessions": "Total Sessions",
+    "days_since_last_activity": "Days Since Last Activity",
+    "total_spent_usd": "Total Spent (USD)",
+}
+UNITS = {
+    "added_to_wishlist": "count",
+    "removed_from_wishlist": "count",
+    "added_to_cart": "count",
+    "removed_from_cart": "count",
+    "cart_quantity_updated": "count",
+    "total_sessions": "count",
+    "days_since_last_activity": "days",
+    "total_spent_usd": "USD",
+}
+
+
+
+def _auto_label(k: str) -> str:
+    # "avg_order_value" -> "Avg Order Value"
+    s = k.replace("__", "_")
+    parts = re.split(r"[_\-]+", s)
+    return " ".join(p.capitalize() for p in parts if p)
+
+def _auto_unit(k: str) -> str:
+    # simple heuristics
+    if k.endswith(("_usd", "_amount", "_revenue", "_value")):
+        return "USD"
+    if k.endswith(("_days", "_hours")):
+        return "days" if k.endswith("_days") else "hours"
+    if k.startswith(("pct_", "ratio_", "rate_")) or k.endswith(("_pct", "_ratio", "_rate")):
+        return "%"
+    return "count"
+
+
+
 @app.get("/model/meta")
 async def model_meta():
-    try:
-        feats = get_expected_features()
-        return {"status": "ok", "features": feats}
-    except Exception as e:
-        return {"status": "error", "error": str(e), "features": None}
+    feats = get_expected_features() or list(FRIENDLY.keys())
+    return {
+        "status": "ok",
+        "features": feats,
+        "friendly_names": {k: FRIENDLY.get(k, _auto_label(k)) for k in feats},
+        "units": {k: UNITS.get(k, _auto_unit(k)) for k in feats},
+        "model_version": MODEL_VERSION,
+        "last_trained_at": LAST_TRAINED_AT,
+    }
+
+
+
+    feats = get_expected_features() or list(FRIENDLY.keys())
+    return {
+        "status": "ok",
+        "features": feats,
+        "friendly_names": {k: FRIENDLY.get(k, k) for k in feats},
+        "units": {k: UNITS.get(k, "count") for k in feats},
+        "model_version": MODEL_VERSION,
+        "last_trained_at": LAST_TRAINED_AT,
+    }
 
 
 @app.get("/health")
@@ -505,3 +866,15 @@ async def health(db: AsyncSession = Depends(get_db)):
             "model": {"ok": model_ok, "error": model_error},
         },
     }
+
+
+app.include_router(routes_analytics.router, prefix="/analysis", tags=["Analysis"])
+
+app.include_router(churn_page.router, prefix="/churn", tags=["Churn Prediction"])
+
+app.include_router(routes_customer_profiles.router, prefix="/customers", tags=["Customer Profiles"])
+
+app.include_router(routes_insights.router, prefix="/high-risk", tags=["High Risk Explorer"])
+
+from app.routes import routes_reports
+app.include_router(routes_reports.router, tags=["Weekly Reports"])

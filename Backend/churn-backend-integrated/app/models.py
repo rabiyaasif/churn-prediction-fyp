@@ -56,3 +56,23 @@ class Event(Base):
     price = sa.Column(sa.Numeric(10, 2), nullable=True)
     timestamp = sa.Column(sa.TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow)
     extra_data = sa.Column(JSONB, nullable=True)
+
+
+class WeeklyReport(Base):
+    __tablename__ = "weekly_reports"
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    client_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("clients.client_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    week_ending = sa.Column(sa.Date, nullable=False, index=True)
+    created_at = sa.Column(
+        sa.TIMESTAMP(timezone=True),
+        server_default=sa.func.now(),
+        nullable=False,
+    )
+    # All report content (summary, insights, segments, recommendations, executive_summary)
+    report_data = sa.Column(JSONB, nullable=False)
