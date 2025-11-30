@@ -5,7 +5,7 @@ import numpy as np
 PATH = "models/pipeline.pkl"  # keep relative to churn-backend folder
 
 def try_print(msg, val=None):
-    print(f"\n=== {msg} ===")
+    # print(f"\n=== {msg} ===")
     if val is not None:
         try:
             print(val)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 
 from app.db import get_db
@@ -19,10 +19,14 @@ router = APIRouter(prefix="/high-risk", tags=["High Risk Explorer"])
 async def high_risk_customers(
     client_id: int,
     limit: int = 500,
+    offset: int = 0,
+    segment: Optional[str] = None,
+    risk: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
     Returns ONLY high-risk customers with all fields required by EventExplorer.tsx
+    Supports pagination with limit and offset.
     """
 
     q = text("""
@@ -49,10 +53,10 @@ async def high_risk_customers(
            AND u.client_id = f.client_id
         WHERE f.client_id=:cid
         ORDER BY f.user_id
-        LIMIT :lim
+        LIMIT :lim OFFSET :off
     """)
 
-    rows = (await db.execute(q, {"cid": client_id, "lim": limit})).mappings().all()
+    rows = (await db.execute(q, {"cid": client_id, "lim": limit, "off": offset})).mappings().all()
     if not rows:
         return {"high_risk_count": 0, "customers": []}
 
@@ -119,10 +123,24 @@ async def high_risk_customers(
             ],
         })
 
+    # Apply segment and risk filters if provided
+    if segment and segment != "all":
+        customers = [c for c in customers if c["segment"] == segment]
+    
+    # Risk is already filtered to "High" only in this endpoint
+    # But we can add additional risk level filtering if needed for consistency
+    if risk and risk != "all" and risk != "High":
+        # Since this endpoint only returns high-risk customers, 
+        # we only filter if risk is explicitly "High" or "all"
+        customers = []
+
     avg_prob = (
         sum(c["churnProbability"] for c in customers) / len(customers)
         if customers else 0
     )
+
+    # Recalculate revenue at risk after filtering
+    revenue_at_risk = sum(c["totalSpend"] for c in customers)
 
     return {
         "high_risk_count": len(customers),

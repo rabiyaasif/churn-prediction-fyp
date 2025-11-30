@@ -31,6 +31,7 @@ from app.routes import routes_analytics
 from app.routes import churn_page
 from app.routes import routes_customer_profiles
 from app.routes import routes_insights
+from app.routes import routes_emails
 
 
 
@@ -60,14 +61,9 @@ async def root():
 
 
 # --------------------------
-# Auth helper (kept for most routes; /predict is no-auth)
+# Auth helper moved to app.deps to avoid circular imports
 # --------------------------
-async def verify_api_key(x_api_key: str = Header(...), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(models.Client).where(models.Client.api_key == x_api_key))
-    client = result.scalar_one_or_none()
-    if client is None:
-        raise HTTPException(status_code=401, detail="Invalid or missing API Key")
-    return client
+from app.deps import verify_api_key
 
 
 # --------------------------
@@ -878,3 +874,5 @@ app.include_router(routes_insights.router, prefix="/high-risk", tags=["High Risk
 
 from app.routes import routes_reports
 app.include_router(routes_reports.router, tags=["Weekly Reports"])
+
+app.include_router(routes_emails.router, tags=["Email"])
