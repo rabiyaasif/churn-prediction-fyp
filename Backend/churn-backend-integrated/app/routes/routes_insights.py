@@ -12,7 +12,7 @@ from app.routes.routes_analytics import (
     infer_top_risk_factors,
 )
 
-router = APIRouter(prefix="/high-risk", tags=["High Risk Explorer"])
+router = APIRouter()
 
 
 @router.get("/{client_id}")
@@ -25,41 +25,55 @@ async def high_risk_customers(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Returns ONLY high-risk customers with all fields required by EventExplorer.tsx
+    Returns all customers with their churn predictions, emails, and risk levels.
+    Supports filtering by risk level (High/Medium/Low/all) and segment.
+    Includes users even if they have no events (uses default feature values).
     Supports pagination with limit and offset.
     """
 
     q = text("""
         SELECT
-            f.user_id,
-            f.added_to_cart, f.removed_from_cart, f.cart_quantity_updated,
-            f.added_to_wishlist, f.removed_from_wishlist,
-            f.total_sessions, f.days_since_last_activity,
-            f.total_spent_usd,
-
+            u.user_id,
             u.email,
             u.name,
+            
+            -- Features from materialized view (NULL if user has no events)
+            COALESCE(f.added_to_cart, 0) AS added_to_cart,
+            COALESCE(f.removed_from_cart, 0) AS removed_from_cart,
+            COALESCE(f.cart_quantity_updated, 0) AS cart_quantity_updated,
+            COALESCE(f.added_to_wishlist, 0) AS added_to_wishlist,
+            COALESCE(f.removed_from_wishlist, 0) AS removed_from_wishlist,
+            COALESCE(f.total_sessions, 0) AS total_sessions,
+            COALESCE(f.days_since_last_activity, 999) AS days_since_last_activity,
+            COALESCE(f.total_spent_usd, 0) AS total_spent_usd,
 
             COALESCE(
               (SELECT MAX(timestamp)
                FROM events e
-               WHERE e.client_id=f.client_id
-               AND e.user_id=f.user_id
-               AND e.event_type='order_completed'),
+               WHERE e.client_id=u.client_id
+               AND e.user_id=u.user_id
+               AND e.event_type='purchase'),
             NOW() - INTERVAL '120 days') AS last_purchase
-        FROM churn_user_features_mv f
-        LEFT JOIN users u
-            ON u.user_id = f.user_id
-           AND u.client_id = f.client_id
-        WHERE f.client_id=:cid
-        ORDER BY f.user_id
+        FROM users u
+        LEFT JOIN churn_user_features_mv f
+            ON f.user_id = u.user_id
+           AND f.client_id = u.client_id
+        WHERE u.client_id=:cid
+        ORDER BY u.user_id
         LIMIT :lim OFFSET :off
     """)
 
     rows = (await db.execute(q, {"cid": client_id, "lim": limit, "off": offset})).mappings().all()
     if not rows:
-        return {"high_risk_count": 0, "customers": []}
-
+        return {
+            "total_customers": 0,
+            "high_risk_count": 0,
+            "revenue_at_risk": 0,
+            "avg_churn_probability": 0,
+            "customers": []
+        }
+    print('*8888888*********************************')
+    print(f"Found {len(rows)} rows")
     # Build model input
     payload, meta = [], []
     for r in rows:
@@ -81,69 +95,113 @@ async def high_risk_customers(
             "name": r["name"],
             "last_purchase": r["last_purchase"]
         })
+    print('---------------------------------------------------')
+    print('i am in meta')
+    print(meta)
+    print('---------------------------------------------------')
+    print(payload)  
+    print('---------------------------------------------------')
+    print(f"Built payload with {len(payload)} items")
 
     # Run model
-    preds = await predict_churn(payload)
+    try:
+        preds = await predict_churn(payload)
+        print(f"Got {len(preds)} predictions")
+    except Exception as e:
+        print(f"ERROR in predict_churn: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"high_risk_count": 0, "customers": [], "error": str(e)}
+
+    if len(preds) != len(payload):
+        print(f"WARNING: Mismatch - {len(payload)} payload items but {len(preds)} predictions")
 
     customers: List[Dict[str, Any]] = []
     revenue_at_risk = 0
 
     for feats, m, p in zip(payload, meta, preds):
-        prob = float(p.get("probability") or 0)
-        risk = bucket_risk(prob)
-        if risk != "High":
+        try:
+            prob = float(p.get("probability") or 0)
+            risk_level = bucket_risk(prob)
+            
+            # Apply risk filter if specified (default: show all)
+            if risk and risk != "all" and risk_level != risk:
+                continue
+
+            total_spend = feats["total_spent_usd"]
+            if risk_level == "High":
+                revenue_at_risk += total_spend
+
+            # Convert last purchase → N days ago
+            last = m["last_purchase"]
+            
+            if last is None:
+                # Use days_since_last_activity as fallback
+                days_since = int(feats.get("days_since_last_activity") or 999)
+            else:
+                if last.tzinfo is None:
+                    last = last.replace(tzinfo=timezone.utc)
+                days_since = (datetime.now(timezone.utc) - last).days
+
+            # Generate recommendations based on risk level
+            recommendations = []
+            if risk_level == "High":
+                recommendations = [
+                    "Send 20% discount code",
+                    "Trigger win-back email",
+                    "Offer premium support call"
+                ]
+            elif risk_level == "Medium":
+                recommendations = [
+                    "Send engagement email",
+                    "Offer personalized recommendations",
+                    "Invite to loyalty program"
+                ]
+            else:
+                recommendations = [
+                    "Maintain regular communication",
+                    "Offer upsell opportunities",
+                    "Request feedback and reviews"
+                ]
+
+            customers.append({
+                "id": m["user_id"],
+                "name": m["name"] or f"User {m['user_id']}",
+                "email": m["email"],
+                "riskLevel": risk_level,  # High, Medium, or Low
+                "segment": classify_segment(total_spend, feats["total_sessions"]),
+                "daysSinceLastPurchase": days_since,
+                "churnProbability": prob,
+                "totalSpend": total_spend,
+                "topRiskFactors": infer_top_risk_factors(feats, 3),
+                "recommendations": recommendations,
+            })
+        except Exception as e:
+            print(f"ERROR processing customer {m.get('user_id', 'unknown')}: {e}")
+            import traceback
+            traceback.print_exc()
             continue
 
-        total_spend = feats["total_spent_usd"]
-        revenue_at_risk += total_spend
-
-        # Convert last purchase → N days ago
-        last = m["last_purchase"]
-
-        if last.tzinfo is None:
-           last = last.replace(tzinfo=timezone.utc)
-
-        days_since = (datetime.now(timezone.utc) - last).days
-
-        customers.append({
-            "id": m["user_id"],
-            "name": m["name"] or f"User {m['user_id']}",
-            "email": m["email"],
-            "segment": classify_segment(total_spend, feats["total_sessions"]),
-            "daysSinceLastPurchase": days_since,
-            "churnProbability": prob,
-            "totalSpend": total_spend,
-            "topRiskFactors": infer_top_risk_factors(feats, 3),
-
-            # ❤️ **STATIC BUT REALISTIC ACTIONS**
-            "recommendations": [
-                "Send 20% discount code",
-                "Trigger win-back email",
-                "Offer premium support call"
-            ],
-        })
-
-    # Apply segment and risk filters if provided
+    # Apply segment filter if provided
     if segment and segment != "all":
         customers = [c for c in customers if c["segment"] == segment]
-    
-    # Risk is already filtered to "High" only in this endpoint
-    # But we can add additional risk level filtering if needed for consistency
-    if risk and risk != "all" and risk != "High":
-        # Since this endpoint only returns high-risk customers, 
-        # we only filter if risk is explicitly "High" or "all"
-        customers = []
 
+    # Calculate statistics
+    total_customers = len(customers)
+    high_risk_customers = [c for c in customers if c["riskLevel"] == "High"]
+    high_risk_count = len(high_risk_customers)
+    
     avg_prob = (
-        sum(c["churnProbability"] for c in customers) / len(customers)
-        if customers else 0
+        sum(c["churnProbability"] for c in customers) / total_customers
+        if total_customers > 0 else 0
     )
 
-    # Recalculate revenue at risk after filtering
-    revenue_at_risk = sum(c["totalSpend"] for c in customers)
+    # Recalculate revenue at risk (only from high-risk customers)
+    revenue_at_risk = sum(c["totalSpend"] for c in high_risk_customers)
 
     return {
-        "high_risk_count": len(customers),
+        "total_customers": total_customers,
+        "high_risk_count": high_risk_count,
         "revenue_at_risk": revenue_at_risk,
         "avg_churn_probability": avg_prob,
         "customers": sorted(customers, key=lambda x: x["churnProbability"], reverse=True),
