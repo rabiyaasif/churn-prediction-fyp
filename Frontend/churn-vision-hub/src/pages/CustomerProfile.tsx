@@ -1,10 +1,8 @@
 // src/pages/CustomerProfile.tsx
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,6 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { getCustomerProfiles } from "@/services/analysis";
 
 const CustomerProfile = () => {
@@ -21,8 +27,10 @@ const CustomerProfile = () => {
 
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [segmentFilter, setSegmentFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
 
@@ -36,7 +44,9 @@ const CustomerProfile = () => {
 
     const loadCustomers = async () => {
       try {
-        const data = await getCustomerProfiles(clientId, 500, 0);
+        setLoading(true);
+        const offset = (currentPage - 1) * itemsPerPage;
+        const data = await getCustomerProfiles(clientId, itemsPerPage, offset, null, segmentFilter !== "all" ? segmentFilter : undefined, riskFilter !== "all" ? riskFilter : undefined);
         setAllCustomers(data.customers || []);
         setTotalCount(
           typeof data.count === "number"
@@ -47,26 +57,23 @@ const CustomerProfile = () => {
         console.error("Failed to load customers", err);
         setAllCustomers([]);
         setTotalCount(0);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadCustomers();
-  }, [clientId]);
+  }, [clientId, currentPage, itemsPerPage, segmentFilter, riskFilter]);
 
-  const filteredCustomers = allCustomers.filter((customer) => {
-    const matchesSearch =
-      customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.id?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [segmentFilter, riskFilter]);
 
-    const matchesSegment =
-      segmentFilter === "all" || customer.segment === segmentFilter;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-    const matchesRisk =
-      riskFilter === "all" || customer.riskLevel === riskFilter;
-
-    return matchesSearch && matchesSegment && matchesRisk;
-  });
+  // Customers are already filtered by backend, so use them directly
+  const filteredCustomers = allCustomers;
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -99,34 +106,18 @@ const CustomerProfile = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            E-Commerce Customer Database
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Complete churn risk profiles for your online shoppers
-          </p>
-        </div>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Export Data
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">
+          E-Commerce Customer Database
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Complete churn risk profiles for your online shoppers
+        </p>
       </div>
 
       {/* Filters */}
       <Card className="p-6">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, or ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
           <Select value={segmentFilter} onValueChange={setSegmentFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Segment" />
@@ -156,12 +147,28 @@ const CustomerProfile = () => {
 
       {/* Summary text */}
       <div className="text-sm text-muted-foreground mb-2">
-        Showing {filteredCustomers.length} of {totalCount} customers
+        {loading ? (
+          "Loading customers..."
+        ) : (
+          <>
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} customers
+          </>
+        )}
       </div>
 
       {/* Customer cards */}
       <div className="space-y-4">
-        {filteredCustomers.map((customer) => (
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading customers...
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No customers found matching your filters.
+          </div>
+        ) : (
+          filteredCustomers.map((customer) => (
           <Card
             key={customer.id}
             className="p-6 hover:border-primary/50 transition-colors"
@@ -257,17 +264,74 @@ const CustomerProfile = () => {
                     </li>
                   ))}
                 </ul>
-                <Button
-                  className="w-full mt-4"
-                  variant={customer.riskLevel === "High" ? "default" : "outline"}
-                >
-                  Take Action
-                </Button>
+               
               </div>
             </div>
           </Card>
-        ))}
+          ))
+        )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && !loading && (
+        <div className="flex items-center justify-between mt-6">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Items per page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2 py-1 border border-border rounded-md text-sm bg-background"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(pageNum)}
+                      isActive={currentPage === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 };

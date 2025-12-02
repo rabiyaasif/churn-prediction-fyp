@@ -3,12 +3,11 @@ import { Outlet, useLocation, NavLink, useNavigate } from "react-router-dom";
 import { getClientProfile } from "@/services/analysis";
 
 import { 
-  BarChart3, Search, Compass, AlertTriangle, Users, 
-  FileText, Settings, Bell, Book, Shield, User,
-  Calendar, ChevronDown, Menu, X, Upload
+  BarChart3, Compass, AlertTriangle, Users, 
+  FileText, Settings, Book, Shield, User,
+  ChevronDown, Menu, X, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,7 +64,7 @@ export function DashboardLayout() {
   const handleLogout = () => {
     localStorage.removeItem("api_key");
     localStorage.removeItem("client_id");
-    console.log("Logging out, going to Landing...");
+    // console.log("Logging out, going to Landing...");
     navigate("/", { replace: true }); // ✅ Redirects to Landing.tsx
   };
 
@@ -195,28 +194,9 @@ export function DashboardLayout() {
               >
                 <Menu className="w-4 h-4" />
               </Button>
-              
-              <div className="relative w-96">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search customers, events, reports..."
-                  className="pl-10"
-                />
-              </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" className="hidden sm:flex">
-                <Calendar className="w-4 h-4 mr-2" />
-                Last 30 days
-                <ChevronDown className="w-4 h-4 ml-2" />
-              </Button>
-              
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full"></span>
-              </Button>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="space-x-2">

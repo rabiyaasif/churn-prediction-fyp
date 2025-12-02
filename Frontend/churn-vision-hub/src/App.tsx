@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import BulkUpload from "./pages/BulkUpload";
 import OnboardingIntro from "./pages/onboarding/Intro";
+import Documentation from "./pages/Documentation";
 import { DashboardLayout } from "./components/layouts/DashboardLayout";
 import { OnboardingLayout } from "./components/layouts/OnboardingLayout";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
+          <Route path="/docs" element={<Documentation />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           

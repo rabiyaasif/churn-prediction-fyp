@@ -128,20 +128,14 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            E-Commerce Customer Churn Intelligence
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Predicting churn for your online shoppers with{" "}
-            {modelAccuracyPercent}% accuracy
-          </p>
-        </div>
-        <Button onClick={() => navigate("/high-risk")}>
-          <AlertTriangle className="h-4 w-4 mr-2" />
-          View High Risk
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">
+          E-Commerce Customer Churn Intelligence
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Predicting churn for your online shoppers with{" "}
+          {modelAccuracyPercent}% accuracy
+        </p>
       </div>
 
       {/* Top metric cards */}

@@ -52,6 +52,9 @@ export default function Landing() {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Link to="/docs">
+                <Button variant="ghost">Documentation</Button>
+              </Link>
               <Link to="/login">
                 <Button variant="ghost">Sign In</Button>
               </Link>

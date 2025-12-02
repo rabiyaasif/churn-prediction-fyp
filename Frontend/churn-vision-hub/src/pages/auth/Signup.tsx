@@ -15,9 +15,56 @@ export default function Signup() {
     websiteUrl: "",
     domain: ""
   });
+  const [errors, setErrors] = useState({
+    businessName: "",
+    email: "",
+    password: "",
+    websiteUrl: "",
+    domain: ""
+  });
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
+
+  // Reset errors
+  const newErrors = {
+    businessName: "",
+    email: "",
+    password: "",
+    websiteUrl: "",
+    domain: ""
+  };
+
+  // Validate all fields
+  let hasErrors = false;
+  if (!formData.businessName || !formData.businessName.trim()) {
+    newErrors.businessName = "Business name is required";
+    hasErrors = true;
+  }
+  if (!formData.email || !formData.email.trim()) {
+    newErrors.email = "Email is required";
+    hasErrors = true;
+  }
+  if (!formData.domain || !formData.domain.trim()) {
+    newErrors.domain = "Domain is required";
+    hasErrors = true;
+  }
+  if (!formData.websiteUrl || !formData.websiteUrl.trim()) {
+    newErrors.websiteUrl = "Website URL is required";
+    hasErrors = true;
+  }
+  if (!formData.password || !formData.password.trim()) {
+    newErrors.password = "Password is required";
+    hasErrors = true;
+  }
+
+  if (hasErrors) {
+    setErrors(newErrors);
+    return;
+  }
+
+  // Clear errors if validation passes
+  setErrors({ businessName: "", email: "", password: "", websiteUrl: "", domain: "" });
 
   try {
     const response = await fetch("http://localhost:8000/clients/", {
@@ -80,9 +127,17 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="text"
                   placeholder="Your Company Inc."
                   value={formData.businessName}
-                  onChange={(e) => setFormData({...formData, businessName: e.target.value})}
-                  required
+                  onChange={(e) => {
+                    setFormData({...formData, businessName: e.target.value});
+                    if (errors.businessName) {
+                      setErrors({...errors, businessName: ""});
+                    }
+                  }}
+                  className={errors.businessName ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {errors.businessName && (
+                  <p className="text-sm text-destructive mt-1">{errors.businessName}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -92,22 +147,39 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="email"
                   placeholder="you@company.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  required
+                  onChange={(e) => {
+                    setFormData({...formData, email: e.target.value});
+                    if (errors.email) {
+                      setErrors({...errors, email: ""});
+                    }
+                  }}
+                  className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {errors.email && (
+                  <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                )}
               </div>
 
-                <div className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="domain">Domain</Label>
                 <Input
                   id="domain"
                   type="text"
                   placeholder="Pet Store"
                   value={formData.domain}
-                  onChange={(e) => setFormData({...formData, domain: e.target.value})}
-                  required
+                  onChange={(e) => {
+                    setFormData({...formData, domain: e.target.value});
+                    if (errors.domain) {
+                      setErrors({...errors, domain: ""});
+                    }
+                  }}
+                  className={errors.domain ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {errors.domain && (
+                  <p className="text-sm text-destructive mt-1">{errors.domain}</p>
+                )}
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="websiteUrl">Website URL</Label>
                 <Input
@@ -115,9 +187,17 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="url"
                   placeholder="https://yourcompany.com"
                   value={formData.websiteUrl}
-                  onChange={(e) => setFormData({...formData, websiteUrl: e.target.value})}
-                  required
+                  onChange={(e) => {
+                    setFormData({...formData, websiteUrl: e.target.value});
+                    if (errors.websiteUrl) {
+                      setErrors({...errors, websiteUrl: ""});
+                    }
+                  }}
+                  className={errors.websiteUrl ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {errors.websiteUrl && (
+                  <p className="text-sm text-destructive mt-1">{errors.websiteUrl}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -128,8 +208,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a strong password"
                     value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    required
+                    onChange={(e) => {
+                      setFormData({...formData, password: e.target.value});
+                      if (errors.password) {
+                        setErrors({...errors, password: ""});
+                      }
+                    }}
+                    className={errors.password ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
                   <Button
                     type="button"
@@ -141,6 +226,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                )}
               </div>
 
               <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90">

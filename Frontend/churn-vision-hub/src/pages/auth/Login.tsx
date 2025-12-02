@@ -14,15 +14,38 @@ export default function Login() {
     email: "",
     password: ""
   });
+  const [errors, setErrors] = useState({
+    email: "",
+    password: ""
+  });
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
+  // Reset errors
+  const newErrors = {
+    email: "",
+    password: ""
+  };
+
   // Validate inputs
-  if (!formData.email || !formData.password) {
-    alert("Please enter both email and password");
+  let hasErrors = false;
+  if (!formData.email || !formData.email.trim()) {
+    newErrors.email = "Email is required";
+    hasErrors = true;
+  }
+  if (!formData.password || !formData.password.trim()) {
+    newErrors.password = "Password is required";
+    hasErrors = true;
+  }
+
+  if (hasErrors) {
+    setErrors(newErrors);
     return;
   }
+
+  // Clear errors if validation passes
+  setErrors({ email: "", password: "" });
 
   try {
     const response = await fetch("http://localhost:8000/clients/login", {
@@ -97,9 +120,18 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="email"
                   placeholder="you@company.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  required
+                  onChange={(e) => {
+                    setFormData({...formData, email: e.target.value});
+                    // Clear error when user starts typing
+                    if (errors.email) {
+                      setErrors({...errors, email: ""});
+                    }
+                  }}
+                  className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {errors.email && (
+                  <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -115,8 +147,14 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    required
+                    onChange={(e) => {
+                      setFormData({...formData, password: e.target.value});
+                      // Clear error when user starts typing
+                      if (errors.password) {
+                        setErrors({...errors, password: ""});
+                      }
+                    }}
+                    className={errors.password ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
                   <Button
                     type="button"
@@ -128,6 +166,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                )}
               </div>
 
               <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90">

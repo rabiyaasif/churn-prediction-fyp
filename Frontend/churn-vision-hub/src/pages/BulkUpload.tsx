@@ -11,6 +11,10 @@ const BulkUpload = () => {
   const [usersFile, setUsersFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fileErrors, setFileErrors] = useState<{
+    products: string | null;
+    users: string | null;
+  }>({ products: null, users: null });
   const [uploadSuccess, setUploadSuccess] = useState<{
     products: boolean | null;
     users: boolean | null;
@@ -50,22 +54,41 @@ const BulkUpload = () => {
       if (type === "products") {
         setProductsFile(file);
         setUploadSuccess((prev) => ({ ...prev, products: null }));
+        setFileErrors((prev) => ({ ...prev, products: null }));
       } else {
         setUsersFile(file);
         setUploadSuccess((prev) => ({ ...prev, users: null }));
+        setFileErrors((prev) => ({ ...prev, users: null }));
       }
       setError(null);
     }
   };
 
   const handleUpload = async () => {
+    // Reset previous errors
+    setError(null);
+    setFileErrors({ products: null, users: null });
+
+    // Validate that at least one file is selected
     if (!productsFile && !usersFile) {
       setError("Please select at least one file to upload.");
+      setFileErrors({
+        products: "File is required",
+        users: "File is required"
+      });
       return;
     }
 
+    // Validate individual files if user tried to upload without selecting
+    const errors: { products: string | null; users: string | null } = {
+      products: null,
+      users: null
+    };
+
+    // Note: We only show errors if user clicked upload without any files
+    // If at least one file is selected, we proceed
+
     setUploading(true);
-    setError(null);
     setUploadSuccess({ products: null, users: null });
     setUploadProgress(0);
     setResults({ products: null, users: null });
@@ -229,9 +252,12 @@ const BulkUpload = () => {
             type="file"
             accept=".csv"
             onChange={(e) => handleFileChange(e, "products")}
-            className="mb-3"
+            className={`mb-3 ${fileErrors.products ? "border-destructive" : ""}`}
             disabled={uploading}
           />
+          {fileErrors.products && (
+            <p className="text-sm text-destructive mt-1">{fileErrors.products}</p>
+          )}
           <p className="text-sm text-muted-foreground mt-1">
             Upload any CSV file with product data. The system will automatically detect columns.
           </p>
@@ -265,9 +291,12 @@ const BulkUpload = () => {
             type="file"
             accept=".csv"
             onChange={(e) => handleFileChange(e, "users")}
-            className="mb-3"
+            className={`mb-3 ${fileErrors.users ? "border-destructive" : ""}`}
             disabled={uploading}
           />
+          {fileErrors.users && (
+            <p className="text-sm text-destructive mt-1">{fileErrors.users}</p>
+          )}
           <p className="text-sm text-muted-foreground mt-1">
             Upload any CSV file with user data. The system will automatically detect columns.
           </p>
@@ -323,7 +352,7 @@ const BulkUpload = () => {
       <div className="flex justify-center">
         <Button
           onClick={handleUpload}
-          disabled={uploading || (!productsFile && !usersFile)}
+          disabled={uploading}
           className="min-w-[200px]"
         >
           {uploading ? "Uploading..." : "Upload Files"}

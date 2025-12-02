@@ -90,18 +90,35 @@ export async function fetchChurnAnalysis(clientId) {
 // src/services/analysis.js
 
 
-export async function getCustomerProfiles(clientId, limit = 500, offset = 0) {
+export async function getCustomerProfiles(clientId, limit = 500, offset = 0, search = null, segment = null, risk = null) {
   // 👇 match your backend path: /customers/customers/{client_id}
   const url = new URL(`${BASE_URL}/customers/customers/${clientId}`);
 
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
+  
+  if (search) {
+    url.searchParams.set("search", search);
+  }
+  if (segment) {
+    url.searchParams.set("segment", segment);
+  }
+  if (risk) {
+    url.searchParams.set("risk", risk);
+  }
+
+  const apiKey = localStorage.getItem("api_key");
+  const headers = {
+    Accept: "application/json",
+  };
+  
+  if (apiKey) {
+    headers["X-API-Key"] = apiKey;
+  }
 
   const res = await fetch(url.toString(), {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
+    headers: headers,
   });
 
   if (!res.ok) {
@@ -114,6 +131,76 @@ export async function getCustomerProfiles(clientId, limit = 500, offset = 0) {
   const json = await res.json();
   // { data: { customers: [...], count: n }, ... }
   return json.data;
+}
+
+/**
+ * Send a single personalized email to a customer
+ * @param {string} toEmail - Recipient email
+ * @param {string} toName - Recipient name
+ * @param {string} subject - Email subject
+ * @param {string} htmlContent - Email HTML content
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export async function sendSingleEmail(toEmail, toName, subject, htmlContent) {
+  const apiKey = localStorage.getItem("api_key");
+  if (!apiKey) {
+    throw new Error("API key not found. Please log in again.");
+  }
+
+  const res = await fetch(`${BASE_URL}/emails/send-single`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": apiKey,
+    },
+    body: JSON.stringify({
+      to_email: toEmail,
+      to_name: toName,
+      subject: subject,
+      html_content: htmlContent,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => res.statusText);
+    throw new Error(`Failed to send email: ${res.status} ${errorText}`);
+  }
+
+  return await res.json();
+}
+
+/**
+ * Send bulk emails to multiple customers
+ * @param {Array<{email: string, name: string}>} recipients - Array of recipient objects
+ * @param {string} subject - Email subject
+ * @param {string} htmlContent - Email HTML content
+ * @returns {Promise<{success: boolean, message: string, sent_count: number}>}
+ */
+export async function sendBulkEmails(recipients, subject, htmlContent) {
+  const apiKey = localStorage.getItem("api_key");
+  if (!apiKey) {
+    throw new Error("API key not found. Please log in again.");
+  }
+
+  const res = await fetch(`${BASE_URL}/emails/send-bulk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": apiKey,
+    },
+    body: JSON.stringify({
+      recipients: recipients,
+      subject: subject,
+      html_content: htmlContent,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => res.statusText);
+    throw new Error(`Failed to send bulk email: ${res.status} ${errorText}`);
+  }
+
+  return await res.json();
 }
 
 /**
@@ -140,18 +227,42 @@ export async function getCustomerProfiles(clientId, limit = 500, offset = 0) {
  * }>}
  */
 export async function fetchHighRiskCustomers(clientId, options = {}) {
-  const { limit = 500 } = options;
+  const { limit = 500, offset = 0, segment = null, risk = null } = options;
+
+  // Validate clientId
+  if (!clientId) {
+    throw new Error("Client ID is required");
+  }
 
   // ✅ Hit FastAPI directly using the same BASE_URL as other services
-  const url = `${BASE_URL}/high-risk/high-risk/${clientId}?limit=${limit}`;
+  // client_id is in the URL path: /high-risk/{client_id}
+  const url = new URL(`${BASE_URL}/high-risk/${clientId}`);
+  
+  // limit is required as a query parameter
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", String(offset));
+  
+  if (segment && segment !== "all") {
+    url.searchParams.set("segment", segment);
+  }
+  if (risk && risk !== "all") {
+    url.searchParams.set("risk", risk);
+  }
+  
+  console.log(`Fetching high-risk customers: ${url.toString()}`);
 
-  const res = await fetch(url, {
+  const apiKey = localStorage.getItem("api_key");
+  const headers = {
+    Accept: "application/json",
+  };
+  
+  if (apiKey) {
+    headers["X-API-Key"] = apiKey;
+  }
+
+  const res = await fetch(url.toString(), {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-      // Add auth headers here if needed, e.g.:
-      // "x-api-key": localStorage.getItem("apiKey") ?? "",
-    },
+    headers: headers,
   });
 
   if (!res.ok) {
@@ -165,14 +276,16 @@ export async function fetchHighRiskCustomers(clientId, options = {}) {
 
   const data = await res.json();
 
-  // Your sample backend response is:
+  // Backend response format:
   // {
+  //   "total_customers": ...,
   //   "high_risk_count": ...,
   //   "revenue_at_risk": ...,
   //   "avg_churn_probability": ...,
   //   "customers": [ ... ]
   // }
   return {
+    totalCustomers: data.total_customers ?? 0,
     highRiskCount: data.high_risk_count ?? 0,
     revenueAtRisk: data.revenue_at_risk ?? 0,
     avgChurnProbability: data.avg_churn_probability ?? 0,
