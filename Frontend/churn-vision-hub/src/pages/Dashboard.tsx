@@ -342,13 +342,13 @@ const Dashboard = () => {
                   )}
                 </div>
               </div>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate(`/customers`)}
               >
                 View Details
-              </Button>
+              </Button> */}
             </div>
           ))}
         </div>

@@ -31,7 +31,7 @@ const sidebarItems = [
 
 const bottomItems = [
   { title: "API Documentation", icon: Book, path: "/docs", badge: null },
-  { title: "Admin Panel", icon: Shield, path: "/admin", badge: null, adminOnly: true },
+  // { title: "Admin Panel", icon: Shield, path: "/admin", badge: null, adminOnly: true },
 ];
 
 export function DashboardLayout() {

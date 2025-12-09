@@ -41,7 +41,7 @@ RISK_COLORS = {
 
 SEGMENT_LABELS = ["High-Value", "Regular", "Occasional", "New"]
 
-MODEL_ACCURACY = 0.73  # 94.3% as in your dashboard
+MODEL_ACCURACY = 0.763
 
 
 

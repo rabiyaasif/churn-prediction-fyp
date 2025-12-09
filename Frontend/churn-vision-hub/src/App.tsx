@@ -59,7 +59,7 @@ const App = () => (
           
           {/* Documentation routes */}
           <Route path="/docs" element={<div>API Documentation coming soon</div>} />
-          <Route path="/admin" element={<div>Admin Panel coming soon</div>} />
+          {/* <Route path="/admin" element={<div>Admin Panel coming soon</div>} /> */}
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />

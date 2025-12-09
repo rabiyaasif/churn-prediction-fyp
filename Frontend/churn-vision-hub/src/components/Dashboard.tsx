@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/DashboardLayout";
+// import DashboardLayout from "@/components/DashboardLayout";
 import MetricCard from "@/components/MetricCard";
 import CustomerSegmentCard from "@/components/CustomerSegmentCard";
 import { Card } from "@/components/ui/card";
@@ -59,7 +59,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <DashboardLayout>
+    
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
@@ -222,7 +222,7 @@ const Dashboard = () => {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+   
   );
 };
 

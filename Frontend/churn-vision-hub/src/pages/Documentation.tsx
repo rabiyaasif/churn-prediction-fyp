@@ -62,7 +62,7 @@ export default function Documentation() {
             API Integration Guide
           </h1>
           <p className="text-lg text-muted-foreground mb-6">
-            Integrate ChurnPredict APIs into your website to enable real-time churn prediction. 
+            Integrate ChurnPredict APIs into your website to enable churn prediction. 
             Track products, users, and customer events to get accurate churn risk predictions.
           </p>
           

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  BarChart3, TrendingUp, Users, AlertTriangle, 
+  BarChart3, TrendingUp, Users, 
   CheckCircle, ArrowRight, Star, Zap
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -13,11 +13,11 @@ const features = [
     title: "Predictive Analytics",
     description: "AI-powered algorithms analyze customer behavior patterns to predict churn risk with 94% accuracy."
   },
-  {
-    icon: AlertTriangle,
-    title: "Real-time Alerts",
-    description: "Get instant notifications when customers show early signs of churn so you can take action immediately."
-  },
+  // {
+  //   icon: AlertTriangle,
+  //   title: "Real-time Alerts",
+  //   description: "Get instant notifications when customers show early signs of churn so you can take action immediately."
+  // },
   {
     icon: Users,
     title: "Customer Insights",
@@ -31,11 +31,12 @@ const features = [
 ];
 
 const stats = [
-  { value: "94%", label: "Prediction Accuracy" },
-  { value: "32%", label: "Avg. Churn Reduction" },
-  { value: "2.4x", label: "ROI Improvement" },
-  { value: "50K+", label: "Customers Saved" }
+  { value: "7+ Metrics", label: "Analysis" },
+  { value: "4 Segments", label: "Segmentation" },
+  { value: "Insights", label: "Risk Detection" },
+  { value: "Weekly", label: "AI-Generated Reports" }
 ];
+
 
 export default function Landing() {
   return (
@@ -83,7 +84,7 @@ export default function Landing() {
           
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Use advanced machine learning to identify at-risk customers before they leave. 
-            Increase retention, boost revenue, and build lasting customer relationships.
+            
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
@@ -93,20 +94,22 @@ export default function Landing() {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <Button variant="outline" size="lg">
+            {/* <Button variant="outline" size="lg">
               Watch Demo
-            </Button>
+            </Button> */}
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          {/* Stats */}
+<div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto">
+  {stats.map((stat, index) => (
+    <div key={index} className="text-center">
+      <div className="text-lg font-semibold text-foreground mb-1">{stat.value}</div>
+      <div className="text-sm text-muted-foreground">{stat.label}</div>
+    </div>
+  ))}
+</div>
+
         </div>
       </section>
 
@@ -121,7 +124,7 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <Card key={index} className="border-card-border hover:shadow-card-hover transition-shadow duration-300">
               <CardContent className="p-6">

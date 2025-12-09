@@ -395,7 +395,7 @@ const EventExplorer = () => {
         </div>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      {/* <div className="grid gap-6 md:grid-cols-3">
         <Card className="p-6 border-destructive/50">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-muted-foreground">
@@ -437,7 +437,7 @@ const EventExplorer = () => {
           </p>
           <Progress value={avgChurnProb * 100} className="mt-2 h-2" />
         </Card>
-      </div>
+      </div> */}
 
       <Card className="p-6 bg-destructive/5 border-destructive/20">
         <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -597,10 +597,10 @@ const EventExplorer = () => {
                   <Mail className="h-4 w-4 mr-2" />
                   Send Personalized Email
                 </Button>
-                <Button variant="outline" className="flex-1">
+                {/* <Button variant="outline" className="flex-1">
                   <Phone className="h-4 w-4 mr-2" />
                   Schedule Call
-                </Button>
+                </Button> */}
                 <Button 
                   variant="outline" 
                   className="flex-1"
