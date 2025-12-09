@@ -35,7 +35,7 @@ const App = () => (
           <Route path="/docs" element={<Documentation />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          
+
           {/* Onboarding routes */}
           <Route path="/onboarding" element={<OnboardingLayout />}>
             <Route path="intro" element={<OnboardingIntro />} />
@@ -44,23 +44,23 @@ const App = () => (
             <Route path="test" element={<div>Test events coming soon</div>} />
             <Route path="next" element={<div>Next steps coming soon</div>} />
           </Route>
-          
+
           {/* Dashboard routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             {/* <Route path="events" element={<div>Event Explorer coming soon</div>} /> */}
             <Route path="events" element={<EventExplorer />} />
             <Route path="churn" element={<ChurnPrediction />} />
-            <Route path="customers" element={<CustomerProfile/>} />
-            <Route path="bulk-upload" element={<BulkUpload/>} />
-            <Route path="reports" element={<Reports/>} />
-            <Route path="settings" element={<Settings/>} />
+            <Route path="customers" element={<CustomerProfile />} />
+            <Route path="bulk-upload" element={<BulkUpload />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
-          
+
           {/* Documentation routes */}
-          <Route path="/docs" element={<div>API Documentation coming soon</div>} />
+
           {/* <Route path="/admin" element={<div>Admin Panel coming soon</div>} /> */}
-          
+
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

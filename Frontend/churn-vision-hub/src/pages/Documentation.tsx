@@ -1,17 +1,26 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BookOpen, Code, AlertCircle, CheckCircle, 
+import {
+  BookOpen, Code, AlertCircle, CheckCircle,
   Copy, ExternalLink, Key, Database, Zap
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const API_BASE_URL = "http://localhost:8000"; // Replace with your production URL
 
 export default function Documentation() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [userApiKey, setUserApiKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const key = localStorage.getItem("api_key");
+    if (key) {
+      setUserApiKey(key);
+    }
+  }, []);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -51,6 +60,13 @@ export default function Documentation() {
               </div>
               <span className="text-xl font-bold text-foreground">ChurnPredict API Documentation</span>
             </div>
+
+            <Link to="/dashboard">
+              <Button variant="outline" className="gap-2">
+                Skip to Dashboard
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -58,14 +74,53 @@ export default function Documentation() {
       <div className="container mx-auto px-6 py-12 max-w-5xl">
         {/* Introduction */}
         <div className="mb-12">
+          {userApiKey && (
+            <Card className="mb-8 border-success/50 bg-success/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-success">
+                  <CheckCircle className="w-5 h-5" />
+                  Account Created Successfully!
+                </CardTitle>
+                <CardDescription>
+                  Here is your API key. You'll need this to authenticate your API requests.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-1">
+                    <pre className="bg-background border border-border p-4 rounded-lg overflow-x-auto text-sm font-mono">
+                      {userApiKey}
+                    </pre>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => copyToClipboard(userApiKey, "user-api-key")}
+                    >
+                      {copiedCode === "user-api-key" ? (
+                        <CheckCircle className="w-4 h-4 text-success" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
+                  <strong>Note:</strong> We've also saved this to your dashboard settings.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <h1 className="text-4xl font-bold text-foreground mb-4">
             API Integration Guide
           </h1>
           <p className="text-lg text-muted-foreground mb-6">
-            Integrate ChurnPredict APIs into your website to enable churn prediction. 
+            Integrate ChurnPredict APIs into your website to enable churn prediction.
             Track products, users, and customer events to get accurate churn risk predictions.
           </p>
-          
+
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -77,8 +132,8 @@ export default function Documentation() {
               <p className="text-sm text-muted-foreground mb-4">
                 All API endpoints require authentication using your API key. Include it in the request header:
               </p>
-              <CodeBlock 
-                code={`X-API-Key: your_api_key_here`} 
+              <CodeBlock
+                code={`X-API-Key: your_api_key_here`}
                 language="text"
                 id="auth-header"
               />
@@ -229,7 +284,7 @@ async function syncProduct(product) {
 
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <p className="text-sm">
-                    <strong>💡 Best Practice:</strong> Call this API whenever you add a new product to your catalog. 
+                    <strong>💡 Best Practice:</strong> Call this API whenever you add a new product to your catalog.
                     You can send multiple products in a single request for better performance.
                   </p>
                 </div>
@@ -356,7 +411,7 @@ async function registerUser(userData) {
 
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <p className="text-sm">
-                    <strong>💡 Best Practice:</strong> Call this API immediately after a successful user registration. 
+                    <strong>💡 Best Practice:</strong> Call this API immediately after a successful user registration.
                     Use your internal user ID as <code className="bg-muted px-1 rounded">user_id</code> to maintain consistency across all APIs.
                   </p>
                 </div>
@@ -545,7 +600,7 @@ async function registerUser(userData) {
 
                 <div>
                   <h3 className="font-semibold mb-3">Integration Examples</h3>
-                  
+
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold mb-2">Frontend Integration (JavaScript)</h4>
                     <CodeBlock
@@ -654,7 +709,7 @@ app.post('/api/wishlist/add', async (req, res) => {
             <div>
               <h3 className="font-semibold mb-2">1. User Identification</h3>
               <p className="text-sm text-muted-foreground">
-                Always include either <code className="bg-muted px-1 rounded">user_id</code> or <code className="bg-muted px-1 rounded">email</code> in events. 
+                Always include either <code className="bg-muted px-1 rounded">user_id</code> or <code className="bg-muted px-1 rounded">email</code> in events.
                 This allows us to track individual customer behavior patterns.
               </p>
             </div>
@@ -662,7 +717,7 @@ app.post('/api/wishlist/add', async (req, res) => {
             <div>
               <h3 className="font-semibold mb-2">2. Product Information</h3>
               <p className="text-sm text-muted-foreground">
-                Include <code className="bg-muted px-1 rounded">product_id</code> in events related to products (cart, wishlist, purchase). 
+                Include <code className="bg-muted px-1 rounded">product_id</code> in events related to products (cart, wishlist, purchase).
                 Ensure products are synced via the Products API first.
               </p>
             </div>
@@ -683,7 +738,7 @@ app.post('/api/wishlist/add', async (req, res) => {
             <div>
               <h3 className="font-semibold mb-2">4. Session Tracking</h3>
               <p className="text-sm text-muted-foreground">
-                Use consistent <code className="bg-muted px-1 rounded">session_id</code> values to group related events. 
+                Use consistent <code className="bg-muted px-1 rounded">session_id</code> values to group related events.
                 This helps identify customer journeys and behavior patterns.
               </p>
             </div>
@@ -691,7 +746,7 @@ app.post('/api/wishlist/add', async (req, res) => {
             <div>
               <h3 className="font-semibold mb-2">5. Pricing Information</h3>
               <p className="text-sm text-muted-foreground">
-                Include <code className="bg-muted px-1 rounded">price</code> and <code className="bg-muted px-1 rounded">quantity</code> for purchase events. 
+                Include <code className="bg-muted px-1 rounded">price</code> and <code className="bg-muted px-1 rounded">quantity</code> for purchase events.
                 This enables calculation of customer lifetime value and spending patterns.
               </p>
             </div>

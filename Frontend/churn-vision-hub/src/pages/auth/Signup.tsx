@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Eye, EyeOff, CheckCircle } from "lucide-react";
 
 export default function Signup() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
@@ -23,80 +24,81 @@ export default function Signup() {
     domain: ""
   });
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  // Reset errors
-  const newErrors = {
-    businessName: "",
-    email: "",
-    password: "",
-    websiteUrl: "",
-    domain: ""
-  };
+    // Reset errors
+    const newErrors = {
+      businessName: "",
+      email: "",
+      password: "",
+      websiteUrl: "",
+      domain: ""
+    };
 
-  // Validate all fields
-  let hasErrors = false;
-  if (!formData.businessName || !formData.businessName.trim()) {
-    newErrors.businessName = "Business name is required";
-    hasErrors = true;
-  }
-  if (!formData.email || !formData.email.trim()) {
-    newErrors.email = "Email is required";
-    hasErrors = true;
-  }
-  if (!formData.domain || !formData.domain.trim()) {
-    newErrors.domain = "Domain is required";
-    hasErrors = true;
-  }
-  if (!formData.websiteUrl || !formData.websiteUrl.trim()) {
-    newErrors.websiteUrl = "Website URL is required";
-    hasErrors = true;
-  }
-  if (!formData.password || !formData.password.trim()) {
-    newErrors.password = "Password is required";
-    hasErrors = true;
-  }
-
-  if (hasErrors) {
-    setErrors(newErrors);
-    return;
-  }
-
-  // Clear errors if validation passes
-  setErrors({ businessName: "", email: "", password: "", websiteUrl: "", domain: "" });
-
-  try {
-    const response = await fetch("http://localhost:8000/clients/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: formData.businessName, // map your form fields
-        email: formData.email,
-        domain: formData.domain, // assuming this is the domain
-        password: formData.password,
-        url: formData.websiteUrl
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Validate all fields
+    let hasErrors = false;
+    if (!formData.businessName || !formData.businessName.trim()) {
+      newErrors.businessName = "Business name is required";
+      hasErrors = true;
+    }
+    if (!formData.email || !formData.email.trim()) {
+      newErrors.email = "Email is required";
+      hasErrors = true;
+    }
+    if (!formData.domain || !formData.domain.trim()) {
+      newErrors.domain = "Domain is required";
+      hasErrors = true;
+    }
+    if (!formData.websiteUrl || !formData.websiteUrl.trim()) {
+      newErrors.websiteUrl = "Website URL is required";
+      hasErrors = true;
+    }
+    if (!formData.password || !formData.password.trim()) {
+      newErrors.password = "Password is required";
+      hasErrors = true;
     }
 
-    const data = await response.json();
-    localStorage.setItem("api_key", data.api_key);
-    localStorage.setItem("client_id", data.client_id);
-    console.log("Signup successful:", data);
+    if (hasErrors) {
+      setErrors(newErrors);
+      return;
+    }
 
-    // Redirect to onboarding
-    window.location.href = "/onboarding/intro";
+    // Clear errors if validation passes
+    setErrors({ businessName: "", email: "", password: "", websiteUrl: "", domain: "" });
 
-  } catch (error) {
-    console.error("Signup failed:", error);
-  }
-};
+    try {
+      const response = await fetch("http://localhost:8000/clients/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: formData.businessName, // map your form fields
+          email: formData.email,
+          domain: formData.domain, // assuming this is the domain
+          password: formData.password,
+          url: formData.websiteUrl
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      localStorage.setItem("api_key", data.api_key);
+      localStorage.setItem("client_id", data.client_id);
+      console.log("Signup successful:", data);
+
+      // Redirect to documentation
+      console.log("Redirecting to /docs...");
+      window.location.href = "/docs";
+
+    } catch (error) {
+      console.error("Signup failed:", error);
+    }
+  };
 
 
   return (
@@ -128,9 +130,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                   placeholder="Your Company Inc."
                   value={formData.businessName}
                   onChange={(e) => {
-                    setFormData({...formData, businessName: e.target.value});
+                    setFormData({ ...formData, businessName: e.target.value });
                     if (errors.businessName) {
-                      setErrors({...errors, businessName: ""});
+                      setErrors({ ...errors, businessName: "" });
                     }
                   }}
                   className={errors.businessName ? "border-destructive focus-visible:ring-destructive" : ""}
@@ -148,9 +150,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                   placeholder="you@company.com"
                   value={formData.email}
                   onChange={(e) => {
-                    setFormData({...formData, email: e.target.value});
+                    setFormData({ ...formData, email: e.target.value });
                     if (errors.email) {
-                      setErrors({...errors, email: ""});
+                      setErrors({ ...errors, email: "" });
                     }
                   }}
                   className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
@@ -168,9 +170,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                   placeholder="Pet Store"
                   value={formData.domain}
                   onChange={(e) => {
-                    setFormData({...formData, domain: e.target.value});
+                    setFormData({ ...formData, domain: e.target.value });
                     if (errors.domain) {
-                      setErrors({...errors, domain: ""});
+                      setErrors({ ...errors, domain: "" });
                     }
                   }}
                   className={errors.domain ? "border-destructive focus-visible:ring-destructive" : ""}
@@ -179,7 +181,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <p className="text-sm text-destructive mt-1">{errors.domain}</p>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="websiteUrl">Website URL</Label>
                 <Input
@@ -188,9 +190,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                   placeholder="https://yourcompany.com"
                   value={formData.websiteUrl}
                   onChange={(e) => {
-                    setFormData({...formData, websiteUrl: e.target.value});
+                    setFormData({ ...formData, websiteUrl: e.target.value });
                     if (errors.websiteUrl) {
-                      setErrors({...errors, websiteUrl: ""});
+                      setErrors({ ...errors, websiteUrl: "" });
                     }
                   }}
                   className={errors.websiteUrl ? "border-destructive focus-visible:ring-destructive" : ""}
@@ -209,9 +211,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                     placeholder="Create a strong password"
                     value={formData.password}
                     onChange={(e) => {
-                      setFormData({...formData, password: e.target.value});
+                      setFormData({ ...formData, password: e.target.value });
                       if (errors.password) {
-                        setErrors({...errors, password: ""});
+                        setErrors({ ...errors, password: "" });
                       }
                     }}
                     className={errors.password ? "border-destructive focus-visible:ring-destructive" : ""}

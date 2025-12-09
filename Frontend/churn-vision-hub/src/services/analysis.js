@@ -1,5 +1,6 @@
 // src/services/analysis.js
 
+// const BASE_URL = "https://api1.protownnetwork.com";
 const BASE_URL = "http://localhost:8000";
 
 /**
@@ -96,7 +97,7 @@ export async function getCustomerProfiles(clientId, limit = 500, offset = 0, sea
 
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
-  
+
   if (search) {
     url.searchParams.set("search", search);
   }
@@ -111,7 +112,7 @@ export async function getCustomerProfiles(clientId, limit = 500, offset = 0, sea
   const headers = {
     Accept: "application/json",
   };
-  
+
   if (apiKey) {
     headers["X-API-Key"] = apiKey;
   }
@@ -237,25 +238,25 @@ export async function fetchHighRiskCustomers(clientId, options = {}) {
   // ✅ Hit FastAPI directly using the same BASE_URL as other services
   // client_id is in the URL path: /high-risk/{client_id}
   const url = new URL(`${BASE_URL}/high-risk/${clientId}`);
-  
+
   // limit is required as a query parameter
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
-  
+
   if (segment && segment !== "all") {
     url.searchParams.set("segment", segment);
   }
   if (risk && risk !== "all") {
     url.searchParams.set("risk", risk);
   }
-  
+
   console.log(`Fetching high-risk customers: ${url.toString()}`);
 
   const apiKey = localStorage.getItem("api_key");
   const headers = {
     Accept: "application/json",
   };
-  
+
   if (apiKey) {
     headers["X-API-Key"] = apiKey;
   }
@@ -268,8 +269,7 @@ export async function fetchHighRiskCustomers(clientId, options = {}) {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `Failed to fetch high-risk customers (${res.status}): ${
-        text || res.statusText
+      `Failed to fetch high-risk customers (${res.status}): ${text || res.statusText
       }`
     );
   }
@@ -301,7 +301,7 @@ export async function fetchHighRiskCustomers(clientId, options = {}) {
  */
 export async function bulkUploadProducts(products) {
   const apiKey = localStorage.getItem("api_key");
-  
+
   if (!apiKey) {
     throw new Error("API key not found. Please log in.");
   }
@@ -331,7 +331,7 @@ export async function bulkUploadProducts(products) {
  */
 export async function bulkUploadUsers(users) {
   const apiKey = localStorage.getItem("api_key");
-  
+
   if (!apiKey) {
     throw new Error("API key not found. Please log in.");
   }
@@ -360,7 +360,7 @@ export async function bulkUploadUsers(users) {
  */
 export async function getClientProfile() {
   const apiKey = localStorage.getItem("api_key");
-  
+
   if (!apiKey) {
     throw new Error("API key not found. Please log in.");
   }
@@ -394,7 +394,7 @@ export async function getClientProfile() {
  */
 export async function updateClientProfile(profileData) {
   const apiKey = localStorage.getItem("api_key");
-  
+
   if (!apiKey) {
     throw new Error("API key not found. Please log in.");
   }
