@@ -17,7 +17,7 @@ services:
       # Override the DATABASE_URL to point to the docker container 'db'
       # Assuming the .env might have localhost, so we explicit set it here or rely on the .env to be correct for docker
       # If .env has localhost, this override is necessary.
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5433/churn_db
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/churn_db
 
   db:
     image: postgres:15-alpine
@@ -28,7 +28,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=churn_db
     ports:
-      - "5433:5433"
+      - "5433:5432"
 
 volumes:
   postgres_data:
